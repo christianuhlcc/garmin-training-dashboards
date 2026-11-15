@@ -1,0 +1,64 @@
+# Exercise -> muscle regions (primary movers 1.0, secondary 0.5, stabilizers omitted), movement pattern,
+# and whether bodyweight is part of the load. Exercise keys are the canonical names produced by
+# ../notes_import.py (manual_sets.exercise). Unmapped names are reported by `make review-exercises`.
+
+# Region keys must match data-muscle ids in site/static/body.svg (tested). group = session-type bucket.
+regions:
+  chest:        {label: Chest,           group: push,      view: front}
+  front_delts:  {label: Front delts,     group: shoulders, view: front}
+  side_delts:   {label: Side delts,      group: shoulders, view: front}
+  biceps:       {label: Biceps,          group: pull,      view: front}
+  forearms:     {label: Forearms,        group: pull,      view: front}
+  abs:          {label: Abs,             group: core,      view: front}
+  obliques:     {label: Obliques,        group: core,      view: front}
+  quads:        {label: Quads,           group: legs,      view: front}
+  adductors:    {label: Adductors,       group: legs,      view: front}
+  calves:       {label: Calves,          group: legs,      view: both}
+  traps:        {label: Traps,           group: shoulders, view: back}
+  rear_delts:   {label: Rear delts,      group: shoulders, view: back}
+  lats:         {label: Lats,            group: pull,      view: back}
+  upper_back:   {label: Upper back,      group: pull,      view: back}
+  lower_back:   {label: Lower back,      group: legs,      view: back}
+  triceps:      {label: Triceps,         group: push,      view: back}
+  glutes:       {label: Glutes,          group: legs,      view: back}
+  hamstrings:   {label: Hamstrings,      group: legs,      view: back}
+
+exercises:
+  Bench Press:                {pattern: horizontal_push, muscles: {chest: 1.0, front_delts: 0.5, triceps: 0.5}}
+  Incline Bench Press:        {pattern: horizontal_push, muscles: {chest: 1.0, front_delts: 0.5, triceps: 0.5}}
+  DB Bench Press:             {pattern: horizontal_push, muscles: {chest: 1.0, front_delts: 0.5, triceps: 0.5}}
+  Close-Grip Bench Press:     {pattern: horizontal_push, muscles: {triceps: 1.0, chest: 0.5, front_delts: 0.5}}
+  DB Fly:                     {pattern: horizontal_push, muscles: {chest: 1.0, front_delts: 0.5}}
+  Overhead Press:             {pattern: vertical_push,   muscles: {front_delts: 1.0, side_delts: 0.5, triceps: 0.5, traps: 0.5}}
+  DB Shoulder Press:          {pattern: vertical_push,   muscles: {front_delts: 1.0, side_delts: 0.5, triceps: 0.5}}
+  DB Lateral Raise:           {pattern: isolation,       muscles: {side_delts: 1.0, traps: 0.5}}
+  DB Rear Delt Fly:           {pattern: isolation,       muscles: {rear_delts: 1.0, upper_back: 0.5}}
+  Overhead Triceps Extension: {pattern: isolation,       muscles: {triceps: 1.0}}
+  Pull-up:                    {pattern: vertical_pull,   bodyweight: true, muscles: {lats: 1.0, biceps: 0.5, upper_back: 0.5, forearms: 0.5}}
+  DB Pullover:                {pattern: vertical_pull,   muscles: {lats: 1.0, chest: 0.5}}
+  DB Row:                     {pattern: horizontal_pull, muscles: {upper_back: 1.0, lats: 0.5, rear_delts: 0.5, biceps: 0.5}}
+  Barbell Row:                {pattern: horizontal_pull, muscles: {upper_back: 1.0, lats: 0.5, rear_delts: 0.5, biceps: 0.5, lower_back: 0.5}}
+  DB Curl:                    {pattern: isolation,       muscles: {biceps: 1.0, forearms: 0.5}}
+  Barbell Curl:               {pattern: isolation,       muscles: {biceps: 1.0, forearms: 0.5}}
+  Curl:                       {pattern: isolation,       muscles: {biceps: 1.0, forearms: 0.5}}
+  DB Hammer Curl:             {pattern: isolation,       muscles: {biceps: 1.0, forearms: 0.5}}
+  DB Shrug:                   {pattern: isolation,       muscles: {traps: 1.0, forearms: 0.5}}
+  Barbell Shrug:              {pattern: isolation,       muscles: {traps: 1.0, forearms: 0.5}}
+  Back Squat:                 {pattern: squat,           muscles: {quads: 1.0, glutes: 1.0, adductors: 0.5}}
+  Deadlift:                   {pattern: hinge,           muscles: {hamstrings: 1.0, glutes: 1.0, lower_back: 1.0, quads: 0.5, traps: 0.5, forearms: 0.5}}
+  Romanian Deadlift:          {pattern: hinge,           muscles: {hamstrings: 1.0, glutes: 0.5, lower_back: 0.5}}
+  Crunch:                     {pattern: core,            muscles: {abs: 1.0}}   # no load: counts sets only
+  # added with the Fitbod import (2025-05..11); bodyweight flag only where bodyweight is most of the load
+  Hip Thrust:                 {pattern: hinge,           muscles: {glutes: 1.0, hamstrings: 0.5, quads: 0.5}}
+  Good Morning:               {pattern: hinge,           muscles: {hamstrings: 1.0, glutes: 1.0, lower_back: 1.0}}
+  Glute Kickback:             {pattern: hinge,           muscles: {glutes: 1.0, hamstrings: 0.5}}
+  Reverse Barbell Curl:       {pattern: isolation,       muscles: {forearms: 1.0, biceps: 0.5}}
+  Upright Row:                {pattern: isolation,       muscles: {side_delts: 1.0, traps: 1.0, front_delts: 0.5, biceps: 0.5}}
+  Chin-up:                    {pattern: vertical_pull,   bodyweight: true, muscles: {lats: 1.0, biceps: 1.0, upper_back: 0.5, forearms: 0.5}}
+  Inverted Row:               {pattern: horizontal_pull, muscles: {upper_back: 1.0, lats: 0.5, rear_delts: 0.5, biceps: 0.5}}
+  Push-up:                    {pattern: horizontal_push, muscles: {chest: 1.0, front_delts: 0.5, triceps: 0.5}}
+  Pike Push-up:               {pattern: vertical_push,   muscles: {front_delts: 1.0, side_delts: 0.5, triceps: 0.5}}
+  Bench Dip:                  {pattern: horizontal_push, muscles: {triceps: 1.0, chest: 0.5, front_delts: 0.5}}
+  Bicycle Crunch:             {pattern: core,            muscles: {abs: 1.0, obliques: 0.5}}
+  Leg Raise:                  {pattern: core,            muscles: {abs: 1.0}}
+  Calf Raises:                {pattern: isolation,       bodyweight: true, muscles: {calves: 1.0}}

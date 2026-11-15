@@ -1,0 +1,505 @@
+{
+ "schemaVersion": 2,
+ "generatedAt": "2026-11-14T18:50:18+00:00",
+ "title": "Design System: Logbook (Garmin dashboards)",
+ "extensions": {
+  "colorMeta": {
+   "page": {
+    "role": "neutral",
+    "displayName": "Page Paper",
+    "canonical": "#f9f9f7"
+   },
+   "surface": {
+    "role": "neutral",
+    "displayName": "Sheet",
+    "canonical": "#fcfcfb"
+   },
+   "surface-raised": {
+    "role": "neutral",
+    "displayName": "Raised Sheet",
+    "canonical": "#f3f2ee"
+   },
+   "ink": {
+    "role": "neutral",
+    "displayName": "Ink",
+    "canonical": "#0b0b0b"
+   },
+   "ink-secondary": {
+    "role": "neutral",
+    "displayName": "Pencil",
+    "canonical": "#52514e"
+   },
+   "ink-muted": {
+    "role": "neutral",
+    "displayName": "Margin Note",
+    "canonical": "#6f6d68"
+   },
+   "rule": {
+    "role": "neutral",
+    "displayName": "Ruled Line",
+    "canonical": "#e1e0d9"
+   },
+   "axis": {
+    "role": "neutral",
+    "displayName": "Axis",
+    "canonical": "#c3c2b7"
+   },
+   "hairline": {
+    "role": "neutral",
+    "displayName": "Hairline",
+    "canonical": "#0b0b0b1a"
+   },
+   "series-blue": {
+    "role": "primary",
+    "displayName": "Logbook Blue",
+    "canonical": "#2a78d6",
+    "tonalRamp": [
+     "#104281",
+     "#184f95",
+     "#1c5cab",
+     "#256abf",
+     "#2a78d6",
+     "#5598e7",
+     "#9ec5f4",
+     "#cde2fb"
+    ]
+   },
+   "series-orange": {
+    "role": "secondary",
+    "displayName": "Ember Orange",
+    "canonical": "#eb6834"
+   },
+   "series-green": {
+    "role": "tertiary",
+    "displayName": "Series Green",
+    "canonical": "#1baf7a"
+   },
+   "series-amber": {
+    "role": "tertiary",
+    "displayName": "Series Amber",
+    "canonical": "#eda100"
+   },
+   "series-pink": {
+    "role": "tertiary",
+    "displayName": "Series Pink",
+    "canonical": "#e87ba4"
+   },
+   "series-forest": {
+    "role": "tertiary",
+    "displayName": "Series Forest",
+    "canonical": "#008300"
+   },
+   "series-violet": {
+    "role": "tertiary",
+    "displayName": "Series Violet",
+    "canonical": "#6250d6"
+   },
+   "series-red": {
+    "role": "tertiary",
+    "displayName": "Series Red",
+    "canonical": "#e34948"
+   },
+   "neutral-mark": {
+    "role": "tertiary",
+    "displayName": "Neutral Mark",
+    "canonical": "#b9b8b0"
+   },
+   "seq-0": {
+    "role": "tertiary",
+    "displayName": "Seq 0",
+    "canonical": "#ecebe6",
+    "tonalRamp": [
+     "#184f95",
+     "#256abf",
+     "#3987e5",
+     "#6da7ec",
+     "#9ec5f4",
+     "#cde2fb",
+     "#ecebe6"
+    ]
+   },
+   "seq-1": {
+    "role": "tertiary",
+    "displayName": "Seq 1",
+    "canonical": "#cde2fb",
+    "tonalRamp": [
+     "#184f95",
+     "#256abf",
+     "#3987e5",
+     "#6da7ec",
+     "#9ec5f4",
+     "#cde2fb",
+     "#ecebe6"
+    ]
+   },
+   "seq-2": {
+    "role": "tertiary",
+    "displayName": "Seq 2",
+    "canonical": "#9ec5f4",
+    "tonalRamp": [
+     "#184f95",
+     "#256abf",
+     "#3987e5",
+     "#6da7ec",
+     "#9ec5f4",
+     "#cde2fb",
+     "#ecebe6"
+    ]
+   },
+   "seq-3": {
+    "role": "tertiary",
+    "displayName": "Seq 3",
+    "canonical": "#6da7ec",
+    "tonalRamp": [
+     "#184f95",
+     "#256abf",
+     "#3987e5",
+     "#6da7ec",
+     "#9ec5f4",
+     "#cde2fb",
+     "#ecebe6"
+    ]
+   },
+   "seq-4": {
+    "role": "tertiary",
+    "displayName": "Seq 4",
+    "canonical": "#3987e5",
+    "tonalRamp": [
+     "#184f95",
+     "#256abf",
+     "#3987e5",
+     "#6da7ec",
+     "#9ec5f4",
+     "#cde2fb",
+     "#ecebe6"
+    ]
+   },
+   "seq-5": {
+    "role": "tertiary",
+    "displayName": "Seq 5",
+    "canonical": "#256abf",
+    "tonalRamp": [
+     "#184f95",
+     "#256abf",
+     "#3987e5",
+     "#6da7ec",
+     "#9ec5f4",
+     "#cde2fb",
+     "#ecebe6"
+    ]
+   },
+   "seq-6": {
+    "role": "tertiary",
+    "displayName": "Seq 6",
+    "canonical": "#184f95",
+    "tonalRamp": [
+     "#184f95",
+     "#256abf",
+     "#3987e5",
+     "#6da7ec",
+     "#9ec5f4",
+     "#cde2fb",
+     "#ecebe6"
+    ]
+   },
+   "status-good": {
+    "role": "status",
+    "displayName": "Status Good",
+    "canonical": "#0ca30c"
+   },
+   "status-warning": {
+    "role": "status",
+    "displayName": "Status Warning",
+    "canonical": "#fab219"
+   },
+   "status-serious": {
+    "role": "status",
+    "displayName": "Status Serious",
+    "canonical": "#ec835a"
+   },
+   "status-critical": {
+    "role": "status",
+    "displayName": "Status Critical",
+    "canonical": "#d03b3b"
+   },
+   "text-good": {
+    "role": "status",
+    "displayName": "Text Good",
+    "canonical": "#006300"
+   },
+   "text-bad": {
+    "role": "status",
+    "displayName": "Text Bad",
+    "canonical": "#a32626"
+   },
+   "focus": {
+    "role": "neutral",
+    "displayName": "Focus",
+    "canonical": "#2a78d6"
+   },
+   "dark-page": {
+    "role": "neutral",
+    "displayName": "Dark Page",
+    "canonical": "#0d0d0d"
+   },
+   "dark-surface": {
+    "role": "neutral",
+    "displayName": "Dark Surface",
+    "canonical": "#1a1a19"
+   },
+   "dark-surface-raised": {
+    "role": "neutral",
+    "displayName": "Dark Surface Raised",
+    "canonical": "#232321"
+   },
+   "dark-ink": {
+    "role": "neutral",
+    "displayName": "Dark Ink",
+    "canonical": "#f0efec"
+   },
+   "dark-ink-secondary": {
+    "role": "neutral",
+    "displayName": "Dark Ink Secondary",
+    "canonical": "#c3c2b7"
+   },
+   "dark-rule": {
+    "role": "neutral",
+    "displayName": "Dark Rule",
+    "canonical": "#2c2c2a"
+   },
+   "dark-ink-muted": {
+    "role": "neutral",
+    "displayName": "Dark Ink Muted",
+    "canonical": "#93918b"
+   },
+   "dark-axis": {
+    "role": "neutral",
+    "displayName": "Dark Axis",
+    "canonical": "#383835"
+   },
+   "dark-series-blue": {
+    "role": "tertiary",
+    "displayName": "Dark Series Blue",
+    "canonical": "#3987e5"
+   },
+   "dark-series-orange": {
+    "role": "tertiary",
+    "displayName": "Dark Series Orange",
+    "canonical": "#d95926"
+   },
+   "dark-series-green": {
+    "role": "tertiary",
+    "displayName": "Dark Series Green",
+    "canonical": "#199e70"
+   },
+   "dark-series-amber": {
+    "role": "tertiary",
+    "displayName": "Dark Series Amber",
+    "canonical": "#c98500"
+   },
+   "dark-series-pink": {
+    "role": "tertiary",
+    "displayName": "Dark Series Pink",
+    "canonical": "#d55181"
+   },
+   "dark-series-violet": {
+    "role": "tertiary",
+    "displayName": "Dark Series Violet",
+    "canonical": "#9085e9"
+   },
+   "dark-series-red": {
+    "role": "tertiary",
+    "displayName": "Dark Series Red",
+    "canonical": "#e66767"
+   }
+  },
+  "typographyMeta": {
+   "headline": {
+    "displayName": "Headline",
+    "purpose": "Page title only."
+   },
+   "title": {
+    "displayName": "Title",
+    "purpose": "Panel and card headings."
+   },
+   "figure": {
+    "displayName": "Figure",
+    "purpose": "Headline number in tiles and cards; tabular."
+   },
+   "body": {
+    "displayName": "Body",
+    "purpose": "Sentences, review prose; max 75ch."
+   },
+   "caption": {
+    "displayName": "Caption",
+    "purpose": "Panel captions, table cells."
+   },
+   "label": {
+    "displayName": "Label",
+    "purpose": "Chips, table headers, controls; sentence case."
+   }
+  },
+  "shadows": [
+   {
+    "name": "floating-tooltip",
+    "value": "0 4px 16px rgba(0,0,0,.12)",
+    "purpose": "Chart and muscle-map tooltips only."
+   }
+  ],
+  "motion": [
+   {
+    "name": "state",
+    "value": "150ms ease-out",
+    "purpose": "Hover and toggle state changes; charts do not animate in."
+   },
+   {
+    "name": "reduced-motion",
+    "value": "transition-duration: 0.01ms",
+    "purpose": "prefers-reduced-motion: reduce collapses all transitions."
+   }
+  ],
+  "breakpoints": [
+   {
+    "name": "phone",
+    "value": "600px"
+   },
+   {
+    "name": "muscle-map-stack",
+    "value": "700px"
+   },
+   {
+    "name": "single-column",
+    "value": "1000px"
+   },
+   {
+    "name": "max-content",
+    "value": "1440px"
+   }
+  ]
+ },
+ "components": [
+  {
+   "name": "Segmented range control",
+   "kind": "button",
+   "refersTo": "segmented-button",
+   "description": "Date-range selector in the top bar; one choice pressed.",
+   "html": "<div class=\"ds-seg\" role=\"group\" aria-label=\"Date range\"><button type=\"button\" aria-pressed=\"false\">6 weeks</button><button type=\"button\" aria-pressed=\"true\">3 months</button><button type=\"button\" aria-pressed=\"false\">12 months</button><button type=\"button\" aria-pressed=\"false\">All</button></div>",
+   "css": ".ds-seg{display:inline-flex;border:1px solid var(--border,rgba(11,11,11,.1));border-radius:8px;overflow:hidden;font-family:system-ui,-apple-system,\"Segoe UI\",sans-serif;font-size:14px}.ds-seg button{font:inherit;background:var(--surface,#fcfcfb);color:var(--ink-2,#52514e);border:0;padding:5px 10px;cursor:pointer;transition:background .15s}.ds-seg button+button{border-left:1px solid var(--border,rgba(11,11,11,.1))}.ds-seg button:hover{background:var(--surface-2,#f3f2ee)}.ds-seg button[aria-pressed=true]{background:var(--surface-2,#f3f2ee);color:var(--ink,#0b0b0b);font-weight:600}.ds-seg button:focus-visible{outline:2px solid var(--focus,#2a78d6);outline-offset:2px}"
+  },
+  {
+   "name": "Top navigation",
+   "kind": "nav",
+   "refersTo": "nav-link",
+   "description": "Page links in the sticky top bar.",
+   "html": "<nav class=\"ds-nav\"><span class=\"ds-brand\">Garmin</span><a href=\"#\" aria-current=\"page\">Overview</a><a href=\"#\">Cycling</a><a href=\"#\">Strength</a><a href=\"#\">Health</a></nav>",
+   "css": ".ds-nav{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-family:system-ui,-apple-system,\"Segoe UI\",sans-serif;font-size:14px}.ds-brand{font-weight:600;margin-right:12px;color:var(--ink,#0b0b0b)}.ds-nav a{color:var(--ink-2,#52514e);text-decoration:none;padding:6px 10px;border-radius:6px;transition:background .15s}.ds-nav a:hover{background:var(--surface-2,#f3f2ee)}.ds-nav a[aria-current=page]{color:var(--ink,#0b0b0b);background:var(--surface-2,#f3f2ee);font-weight:600}.ds-nav a:focus-visible{outline:2px solid var(--focus,#2a78d6);outline-offset:2px}"
+  },
+  {
+   "name": "Status chip",
+   "kind": "chip",
+   "refersTo": "status-chip",
+   "description": "Status as dot + word in a pill; never colour alone.",
+   "html": "<span class=\"ds-chip ds-good\">HRV: in range</span> <span class=\"ds-chip ds-watch\">RHR: watch</span> <span class=\"ds-chip ds-bad\">Bench: regressing</span>",
+   "css": ".ds-chip{--tone:#6f6d68;background:color-mix(in srgb,var(--tone) 14%,#fcfcfb);border:1px solid color-mix(in srgb,var(--tone) 32%,#fcfcfb);display:inline-flex;align-items:center;gap:5px;font-family:system-ui,-apple-system,\"Segoe UI\",sans-serif;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;color:var(--ink,#0b0b0b);white-space:nowrap}.ds-chip::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--tone)}.ds-good{--tone:#0ca30c}.ds-watch{--tone:#fab219}.ds-bad{--tone:#d03b3b}"
+  },
+  {
+   "name": "Panel",
+   "kind": "card",
+   "refersTo": "panel",
+   "description": "Chart/table container with fixed anatomy: title, caption, body, Table toggle.",
+   "html": "<section class=\"ds-panel\"><div class=\"ds-ph\"><h2>Fitness and form</h2><button type=\"button\" class=\"ds-tool\">Table</button></div><p class=\"ds-cap\">CTL (fitness), ATL (fatigue) and TSB (form), TRIMP units.</p><div class=\"ds-body\"></div><p class=\"ds-note\">Wrist HR on 174 of 194 rides.</p></section>",
+   "css": ".ds-panel{background:var(--surface,#fcfcfb);border:1px solid var(--border,rgba(11,11,11,.1));border-radius:12px;padding:14px 16px 12px;color:var(--ink,#0b0b0b);font-family:system-ui,-apple-system,\"Segoe UI\",sans-serif;font-size:14px;line-height:1.45;max-width:520px}.ds-ph{display:flex;align-items:flex-start;gap:8px}.ds-panel h2{font-size:15px;margin:0;text-wrap:balance}.ds-tool{margin-left:auto;font:inherit;font-size:12px;background:transparent;color:var(--ink-2,#52514e);border:1px solid var(--border,rgba(11,11,11,.1));border-radius:6px;padding:2px 8px;cursor:pointer}.ds-tool:hover{background:var(--surface-2,#f3f2ee)}.ds-tool:focus-visible{outline:2px solid var(--focus,#2a78d6);outline-offset:2px}.ds-cap{color:var(--ink-2,#52514e);font-size:12.5px;margin:3px 0 8px}.ds-body{height:120px;border-top:1px solid #e1e0d9;border-bottom:1px solid #e1e0d9}.ds-note{color:var(--muted,#6f6d68);font-size:12px;margin:4px 0 0}"
+  },
+  {
+   "name": "KPI tile",
+   "kind": "card",
+   "refersTo": "kpi-tile",
+   "description": "Short row of headline figures with delta vs the previous window.",
+   "html": "<div class=\"ds-tile\"><span class=\"ds-l\">Overnight HRV</span><span class=\"ds-v\">50<span class=\"ds-u\">ms</span></span><span class=\"ds-d\">−3 vs previous 7 days</span><span class=\"ds-n\">baseline 55 ± 5</span></div>",
+   "css": ".ds-tile{background:var(--surface,#fcfcfb);border:1px solid var(--border,rgba(11,11,11,.1));border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;width:180px;font-family:system-ui,-apple-system,\"Segoe UI\",sans-serif;color:var(--ink,#0b0b0b)}.ds-l{color:var(--ink-2,#52514e);font-size:12.5px}.ds-v{font-size:26px;font-weight:600;line-height:1.15;font-variant-numeric:tabular-nums}.ds-u{font-size:13px;font-weight:400;color:var(--ink-2,#52514e);margin-left:3px}.ds-d{font-size:12px;color:var(--ink-2,#52514e);font-variant-numeric:tabular-nums}.ds-n{font-size:11.5px;color:var(--muted,#6f6d68)}"
+  },
+  {
+   "name": "Data table",
+   "kind": "custom",
+   "refersTo": "table",
+   "description": "Dense ruled table with sticky header and tabular numbers.",
+   "html": "<table class=\"ds-table\"><thead><tr><th>Date</th><th>Lift</th><th class=\"num\">e1RM kg</th></tr></thead><tbody><tr><td>01 Jan</td><td>Back Squat</td><td class=\"num\">50.0</td></tr><tr><td>02 Jan</td><td>DB Row</td><td class=\"num\">30.0</td></tr><tr class=\"dim\"><td>03 Jan</td><td>Crunch</td><td class=\"num\">BW</td></tr></tbody></table>",
+   "css": ".ds-table{border-collapse:collapse;font-family:system-ui,-apple-system,\"Segoe UI\",sans-serif;font-size:12.5px;color:var(--ink,#0b0b0b)}.ds-table th,.ds-table td{text-align:left;padding:5px 8px;border-bottom:1px solid #e1e0d9;white-space:nowrap}.ds-table th{color:var(--ink-2,#52514e);font-weight:600;background:var(--surface,#fcfcfb)}.ds-table .num{text-align:right;font-variant-numeric:tabular-nums}.ds-table tr.dim td{color:var(--muted,#6f6d68)}"
+  },
+  {
+   "name": "Needs-attention row",
+   "kind": "custom",
+   "refersTo": "attention-item",
+   "description": "Overview flag: tinted row link with dot, title, numbers, arrow.",
+   "html": "<ul class=\"ds-att\"><li><a href=\"#\"><span class=\"t\">HRV below your usual range</span><span class=\"d\">7-day average 35 ms · usual 40 ± 5 ms</span><span class=\"g\" aria-hidden=\"true\">→</span></a></li></ul>",
+   "css": ".ds-att{list-style:none;margin:0;padding:0;max-width:520px;font-family:system-ui,-apple-system,\"Segoe UI\",sans-serif;font-size:14px}.ds-att a{--tone:#fab219;display:grid;grid-template-columns:10px minmax(0,1fr) auto;column-gap:12px;align-items:baseline;padding:10px 14px;border-radius:10px;color:#0b0b0b;text-decoration:none;background:color-mix(in srgb,var(--tone) 9%,#fcfcfb);border:1px solid color-mix(in srgb,var(--tone) 26%,#fcfcfb);transition:background-color .15s ease-out}.ds-att a::before{content:'';grid-row:1;width:9px;height:9px;border-radius:50%;background:var(--tone);align-self:center}.ds-att a:hover{background:color-mix(in srgb,var(--tone) 15%,#fcfcfb)}.ds-att a:focus-visible{outline:2px solid #2a78d6;outline-offset:2px}.ds-att .t{grid-column:2;font-weight:600}.ds-att .d{grid-column:2;grid-row:2;color:#52514e;font-size:12.5px}.ds-att .g{grid-column:3;grid-row:1/span 2;align-self:center;color:#52514e}"
+  }
+ ],
+ "narrative": {
+  "northStar": "The Training Logbook",
+  "overview": "**Creative North Star: \"The Training Logbook\"**\n\nThese pages are a well-kept personal log, not a control room. Imagine a good notebook: ruled lines, exact figures written neatly, and a note in the margin wherever a number needs a caveat (\"wrist HR\", \"lower bound\", \"2 nights missing\"). Ink on paper does almost all the work. Colour appears only where it carries meaning: a series in a chart, a status dot, a change that went the right or wrong way. On an ordinary day the page reads calm, because on an ordinary day nothing is wrong.\n\nThe system is a product UI and is allowed to be dense. Tables run long, charts sit two to a row on desktop, and the type is one system sans in a few sizes and weights. What keeps the density quiet is consistency: every panel has the same anatomy (title, one-line caption, chart or table, a \"Table\" toggle), every number is tabular, and every caveat sits next to the figure it qualifies. The data-viz palette is the validated reference palette (colour-blind safe in light and dark), and it is used only for data.\n\nThis system rejects three things by name, taken from PRODUCT.md: **gamified fitness apps** (badges, streaks, confetti, \"you crushed it!\"), **corporate BI dashboards** (grids of KPI tiles, the generic SaaS look) and **alarmist health apps** (red warnings everywhere). The reference for feel is Strava: clean, pretty, easy to read.\n\nLayout: one centred column up to 1440px with 20px side gutters (16px on phones). Panels sit in a two-column grid that drops to one column below 1000px. The top bar is sticky on desktop and scrolls away on phones. Motion is limited to state changes (hover, toggles) of about 150ms. Charts don't animate in.",
+  "keyCharacteristics": [
+   "Ink-first, near-neutral surfaces. Colour is used only for data and status.",
+   "One system sans. Hierarchy comes from size and weight, never from a second family.",
+   "Flat surfaces with hairline borders, like ruled lines.",
+   "Caveats sit in the margin: small muted notes next to the figure, never hidden.",
+   "Soft, friendly controls: pill chips, gently rounded segmented buttons.",
+   "Light and dark are both designed, with their own validated steps rather than an automatic inversion."
+  ],
+  "rules": [
+   {
+    "name": "The Ink-First Rule",
+    "body": "Text is always ink, pencil or margin note, never a series colour. A coloured mark beside the text carries the identity.",
+    "section": "colors"
+   },
+   {
+    "name": "The Data-Only Saturation Rule",
+    "body": "Saturated colour is forbidden on surfaces, headings, buttons and decoration. If a colour isn't encoding a series, a magnitude or a status, it shouldn't be there.",
+    "section": "colors"
+   },
+   {
+    "name": "The Quiet Status Rule",
+    "body": "A status is a dot plus a word (\"● HRV: in range\"), never a filled red banner, a red panel or red body text. \"Watch\" is amber, not red; only \"out of range\" and \"regressing\" earn the critical dot.",
+    "section": "colors"
+   },
+   {
+    "name": "The One Family Rule",
+    "body": "No second typeface, no display font, no webfont download. The system sans does everything, and it keeps the site offline and instant.",
+    "section": "typography"
+   },
+   {
+    "name": "The Tabular Figures Rule",
+    "body": "Every number that can sit above or beside another number uses `font-variant-numeric: tabular-nums`.",
+    "section": "typography"
+   },
+   {
+    "name": "The Ruled-Paper Rule",
+    "body": "Surfaces are separated by hairlines and whitespace, never by shadow. A panel with a drop shadow is a bug.",
+    "section": "elevation"
+   }
+  ],
+  "dos": [
+   "**Do** keep every surface flat with hairline borders (1px, 10% ink) and 12px corners on panels and tiles.",
+   "**Do** put the caveat next to the number, in margin-note grey (\"eFTP ≥ … W (lower bound)\", \"wrist HR\").",
+   "**Do** show status as a dot, an icon character and a word in a softly tinted pill chip (14% tint, never a solid fill). Use colour plus text, never colour alone.",
+   "**Do** use the series colours in their fixed order and keep each entity's colour stable across filters.",
+   "**Do** give every chart a legend (two or more series), a Table toggle, and a hover tooltip.",
+   "**Do** design dark mode with its own validated steps, and test both themes at 1440px and 390px.",
+   "**Do** keep motion to roughly 150ms state transitions, and honour `prefers-reduced-motion` (style.css collapses all transitions).",
+   "**Do** keep tile rows to 4. Extra metrics go into one inline line of chips, not more tiles.",
+   "**Do** colour a change only when it matters (tiles: 20 % or more of the previous value; lift deltas: 5 % of e1RM), and never for a restart or a new lift.",
+   "**Do** let chart legends wrap (the plot moves down to make room); never page them.",
+   "**Do** keep chart text at 11px or larger, and pick heatmap label colour per cell (ink or white, whichever contrasts)."
+  ],
+  "donts": [
+   "**Don't** look like a **gamified fitness app**: no badges, streaks, confetti, trophies or \"you crushed it!\" copy.",
+   "**Don't** look like a **corporate BI dashboard**: no wall of identical KPI tiles, no gradient hero numbers, no generic SaaS chrome. Tiles are allowed only as a short row (at most 4–5) that leads into charts.",
+   "**Don't** look like an **alarmist health app**: no red banners, no red panels, no red body text, no warning icons for a value that's only \"watch\".",
+   "**Don't** add drop shadows to panels, tiles or cards; only floating tooltips have a shadow.",
+   "**Don't** use a second typeface, webfonts or uppercase tracked eyebrows above sections.",
+   "**Don't** use `border-left` or `border-right` wider than 1px as a coloured accent stripe.",
+   "**Don't** colour text with a series colour, or use status colours for anything but status.",
+   "**Don't** use dual-axis charts; put two measures in two charts."
+  ]
+ }
+}

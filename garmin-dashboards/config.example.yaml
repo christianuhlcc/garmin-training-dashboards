@@ -1,0 +1,68 @@
+# Garmin dashboards configuration: EXAMPLE with placeholder values.
+# Copy to config.yaml (gitignored) and fill in your own values; segment coordinates come from src.segments_suggest.
+# Athlete values are stated by the user, not derived from data. Baselines are computed from data.
+
+source:
+  sqlite: ../garmin.db          # written by ../garmin_sync.py + ../notes_import.py (read-only here)
+  fit_dir: ../data/fit          # original activity files, <activity_id>.zip (read-only here)
+timezone: Europe/Berlin
+
+devices:                        # Garmin FIT product ids -> display names
+  4260: "Venu 3"
+
+athlete:
+  birth_year: 1990
+  sex: male
+  height_cm: 175
+  hr_max: 190            # true max, observed
+  ftp_w: null            # no current test; goal is 200
+  ftp_goal_w: 200
+  bodyweight_fallback_kg: 70   # used when no weight entry exists yet (pull-up load, W/kg)
+
+cycling:
+  primary_device: "Garmin Venu 3"       # rides recorded on the watch
+  hr_source: "Polar chest strap"        # trustworthy HR during rides
+  commute_km: 10                        # each way, about 2x per week, city traffic
+  commute_labels: ["Home", "Work"]      # names for the two most frequent ride endpoints (first = the more frequent one)
+  long_ride_min_minutes: 150
+  ebike_names: ["My E-Bike"]          # exclude from fitness load by default
+  segments:                             # personal segments on the commute (direction matters); picked with src.segments_suggest
+    - name: "Out: clean 3 km"           # Home -> Work, km 3-6: flat, almost never stopped
+      start: [0.0, 0.0]
+      end:   [0.0, 0.0]
+      radius_m: 30
+    - name: "Back: gentle climb"        # Work -> Home, km 2.5-4: the only real gradient (+25 m)
+      start: [0.0, 0.0]
+      end:   [0.0, 0.0]
+      radius_m: 30
+    - name: "Back: clean 3 km"          # Work -> Home, km 5.5-8.5
+      start: [0.0, 0.0]
+      end:   [0.0, 0.0]
+      radius_m: 30
+  strava_hr_source: strap               # decided 2026-11-15: older (Strava-archive) rides were recorded with the chest strap
+                                        # (strap | wrist | unknown; unknown keeps them out of strap-only views)
+  intensity_strap_only: true            # decided 2026-11-14: intensity distribution uses chest-strap rides only
+  eftp_is_lower_bound: true             # decided 2026-11-14: eFTP shown, labelled "lower bound" (no maximal efforts yet)
+  min_power_rides: 5                    # power section switches on at this many rides with a power stream
+  sprint:                               # commute sprint detection (section 7.5); experimental at ~3 s smart recording
+    power_factor: 2.0                   # 10 s mean power > factor x eFTP
+    min_duration_s: 8
+    merge_gap_s: 20
+    speed_gain_kmh: 10                  # without power: +10 km/h within 10 s ...
+    speed_start_max_kmh: 15             # ... starting from below 15 km/h
+    speed_peak_min_kmh: 30              # ... and reaching >= 30 km/h (added: excludes normal pull-aways at lights)
+  zones_hr:                             # 3-zone model, editable; %HRmax defaults overstate Z3 for him
+    z1_upper_bpm: null                  # null -> fallback 0.80 * hr_max
+    z2_upper_bpm: null                  # null -> fallback 0.88 * hr_max
+
+strength:
+  split: ["push", "pull", "shoulders"]  # one round = 3 sessions; good weeks = 2 rounds
+  legs_planned: true                    # squat re-entry later; dashboard picks it up automatically
+  goal: "aesthetics first, health second"
+  weekly_sets_band: [10, 20]            # reference band per muscle group
+  recency_half_life_days: 3
+  garmin_only_sessions: session_level   # decided 2026-11-14: Garmin auto-detected sets are not used for lifts
+
+health:
+  baseline_days: 60
+  short_window_days: 7

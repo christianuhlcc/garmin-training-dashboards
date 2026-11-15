@@ -1,0 +1,63 @@
+# Personal data and secrets: never commit. Code, docs and the example config only.
+
+# --- secrets
+.env
+.env.*
+.garmin_token
+*.token
+
+# --- databases (raw Garmin data, health, GPS) and backups
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+*.duckdb
+*.duckdb.wal
+data/
+
+# --- activity files and exports (GPS tracks)
+*.fit
+*.FIT
+*.gpx
+*.tcx
+*.zip
+*.gz
+
+# --- strength log snapshots (Apple Notes), logs
+notes/
+logs/
+*.log
+
+# --- dashboards: build output (embeds all data), manual imports, personal config
+garmin-dashboards/build/
+garmin-dashboards/manual/
+garmin-dashboards/config.yaml
+garmin-dashboards/.impeccable/critique/
+garmin-dashboards/.impeccable/live/
+garmin-dashboards/.impeccable/hook.cache.json
+
+# --- local tooling
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+.claude/settings.local.json
+
+# --- personal docs (real body stats, health history, data snapshots); sanitized copies are tracked instead
+.claude/*
+!.claude/skills/
+.claude/skills/weekly-training-review/SKILL.md
+garmin-dashboards/DATA_INVENTORY.md
+garmin-dashboards/DATA_GAPS.md
+
+# --- hardening: data types regardless of folder
+*.db.*
+*.bak
+*.pkl
+*.parquet
+*.csv
+**/screenshots/

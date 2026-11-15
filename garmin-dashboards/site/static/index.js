@@ -1,0 +1,60 @@
+/* Overview: status cards (src/metrics/attention.py) plus one chart: weekly training hours, cycling, e-bike and lifting stacked. */
+(function () {
+  "use strict";
+  const D = window.Dash;
+  if (!D.init("index")) return;
+  const X = D.data, root = document.getElementById("content");
+  if (X.meta.stale) root.appendChild(D.el("p", { class: "sentence stale" }, `The newest data is from ${D.esc(D.dateLabel(X.meta.data_through))}, more than 3 days old. Check logs/sync.log.`));
+
+  const A = X.attention || { sentence: "", areas: [] };
+  const sec = D.el("section", { class: "synthesis", "aria-labelledby": "syn-h" });
+  sec.appendChild(D.el("h2", { id: "syn-h", class: "visually-hidden" }, "This week"));
+  sec.appendChild(D.el("p", { class: "synthesis-lead" }, D.esc(A.sentence)));
+  const ul = D.el("ul", { class: "area-list" });
+  const CHIP = { in_range: ["in_range", "On track"], watch: ["watch", "Watch"], out_of_range: ["out_of_range", "Out of range"], note: ["ok", "Note"] };
+  for (const a of A.areas) {
+    const [cls, label] = CHIP[a.status] || CHIP.in_range;
+    const li = D.el("li", { class: "area-row " + a.status });
+    li.innerHTML = `<a href="${D.esc(a.href)}"><span class="area-name">${D.esc(a.title)}</span>` +
+      `<span class="area-chip"><span class="chip ${cls}">${label}</span></span>` +
+      `<span class="area-line">${D.esc(a.line)}</span><span class="area-facts">${D.esc(a.facts)}</span>` +
+      `<span class="att-go" aria-hidden="true">→</span></a>`;
+    ul.appendChild(li);
+  }
+  sec.appendChild(ul);
+  sec.appendChild(D.el("p", { class: "small att-window" }, "Body compares your last 7 days with your usual 60-day range; strength counts this calendar week, cycling the last 7 days."));
+  root.appendChild(sec);
+
+  const W = X.weekly, B = X.budget, rows = W.weeks;
+  const hoursOf = (w) => { const i = B.weeks.indexOf(w); return i < 0 ? [null, null, null] : [B.cycling[i], B.lifting[i], (B.ebike || [])[i]]; };
+  const cur = rows.find((r) => r.current)?.week;
+  const first = rows[0].week;
+  const p = D.panel(root, { id: "weekly", title: "Weekly training hours",
+    caption: "Hours per week, cycling, e-bike and lifting stacked. The current week is still in progress (lighter).",
+    method: "Cycling: every non-e-bike ride (Garmin, plus Sigma/Strava rides with no Garmin copy). E-bike: rides recorded as e-bike or on the e-bike named in config.yaml. Lifting: all Garmin strength sessions.",
+    table: () => ({ cols: [{ key: "w", label: "Week of" }, { key: "c", label: "Cycling h", num: true, fmt: (v) => D.fmt(v, 1) }, { key: "e", label: "E-bike h", num: true, fmt: (v) => D.fmt(v, 1) }, { key: "l", label: "Lifting h", num: true, fmt: (v) => D.fmt(v, 1) }],
+      rows: rows.slice().reverse().map((r) => ({ w: r.week + (r.current ? " (so far)" : ""), c: hoursOf(r.week)[0], e: hoursOf(r.week)[2], l: hoursOf(r.week)[1] })) }) });
+  const chart = D.chart(p.body, (ctx) => {
+    const c = ctx.c, dim = (w) => w === cur;
+    const mk = (n, idx, col) => D.bar(n, rows.map((r) => { const v = hoursOf(r.week)[idx];
+      return { value: [r.week, v || null], itemStyle: { color: col, borderRadius: 0, borderColor: c.surface, borderWidth: 1, opacity: dim(r.week) ? 0.45 : 1 } }; }), col, { stack: "h", barMaxWidth: 28 });
+    return {
+      _aria: "Weekly training hours, cycling, e-bike and lifting, last 12 weeks", legend: { show: false },
+      grid: { left: 40, right: 16, top: 16, bottom: 26, containLabel: false },
+      tooltip: Object.assign(D.base(ctx).tooltip, { formatter: (ps) => {
+        const w = ps[0].value[0], r = rows.find((x) => x.week === w); if (!r) return "";
+        const [ch, lh, eh] = hoursOf(w), f = (v) => (v === null || v === undefined ? "–" : D.fmt(v, 1) + " h");
+        return `<b>Week of ${D.dateLabel(w)}${r.current ? " (so far)" : ""}</b><br>Cycling ${f(ch)}<br>E-bike ${f(eh)}<br>Lifting ${f(lh)}`; } }),
+      xAxis: D.timeAxis(ctx, { min: D.weekAxisMin(first), axisLabel: { color: c.muted, fontSize: 11, hideOverlap: true }, axisLine: { lineStyle: { color: c.axis } } }),
+      yAxis: D.valueAxis(ctx, "", { min: 0, splitNumber: 4 }),
+      series: [mk("Cycling", 0, c.s[0]), mk("E-bike", 2, c.s[2]), mk("Lifting", 1, c.s[1])],
+    };
+  }, "strip");
+  chart.el.style.height = "280px";
+  p.body.insertBefore(D.el("p", { class: "legend-note" }, '<span class="key" style="background:var(--s1)"></span> Cycling hours &nbsp; <span class="key" style="background:var(--s3)"></span> E-bike hours &nbsp; <span class="key" style="background:var(--s2)"></span> Lifting hours'), p.body.firstChild);
+
+  const R = X.last_review;
+  if (R) root.appendChild(D.el("p", { class: "review-link" },
+    `<a href="reviews.html">Last week's review: ${D.esc(R.week.replace(/^\d{4}-/, ""))} · ${D.esc(D.rangeLabel(R.start, R.end))} <span aria-hidden="true">→</span></a>`));
+  root.appendChild(D.el("p", { class: "small footer-note" }, `Built ${D.esc(X.meta.generated_at)} from the local Garmin sync and the Apple Notes strength log.`));
+})();

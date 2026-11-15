@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }} · Logbook</title>
+<link rel="stylesheet" href="static/style.css">
+{% if page == "map" %}<link rel="stylesheet" href="static/leaflet/leaflet.css">{% endif %}
+<script>
+  /* apply the stored theme before first paint */
+  try { var t = localStorage.getItem("dash-theme"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
+</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <span class="brand">Logbook</span>
+    <nav class="nav" aria-label="Dashboards">
+      {% for key, label in [("index", "Overview"), ("cycling", "Cycling"), ("map", "Map"), ("strength", "Strength"), ("health", "Health"), ("reviews", "Reviews")] %}
+      <a href="{{ key }}.html"{% if key == page %} aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <span class="spacer"></span>
+    {% if page not in ("index", "reviews", "map") %}
+    <div class="seg" id="range" role="group" aria-label="Date range">
+      <button type="button" data-range="6w">6 weeks</button><button type="button" data-range="3m">3 months</button><button type="button" data-range="12m">12 months</button><button type="button" data-range="all">All</button>
+    </div>
+    {% endif %}
+    <button type="button" class="icon-btn" id="theme-btn" aria-label="Theme: Auto"><span class="small-label">Theme</span> Auto</button>
+  </div>
+</header>
+<main class="wrap">
+  <div class="page-head"><h1>{{ title }}</h1><span class="freshness" id="freshness"></span></div>
+  <p class="question">{{ question }}</p>
+  <div id="content"></div>
+</main>
+{% if inline_svg %}<template id="body-svg">{{ inline_svg|safe }}</template>{% endif %}
+{% if page == "map" %}<script src="static/leaflet/leaflet.js"></script>{% endif %}
+<script src="static/echarts.min.js"></script>
+<script src="static/app.js"></script>
+<script src="data/{{ page }}.js"></script>
+<script src="static/{{ page }}.js"></script>
+</body>
+</html>
