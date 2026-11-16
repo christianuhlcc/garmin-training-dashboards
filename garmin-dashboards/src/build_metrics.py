@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from src.adapters import source as src, strava_archive
-from src.metrics import attention, common, cycling as cyc, health as hl, strength as st
+from src.metrics import attention, common, cycling as cyc, health as hl, readiness as rd, strength as st
 
 # numpy 2 + pandas 2.2 emit this for ordinary Timestamp - Timedelta arithmetic; not actionable here.
 warnings.filterwarnings("ignore", message="The 'generic' unit for NumPy timedelta is deprecated")
@@ -619,7 +619,7 @@ def build_strength(cfg: dict, enriched: pd.DataFrame, sets: pd.DataFrame, weight
     wk_load = mr[mr["date"] > t1 - pd.Timedelta(weeks=8)].groupby(["muscle", "week"])["load"].sum().groupby("muscle").max()
     rec = st.recency(mr, t1, scfg.get("recency_half_life_days", 3))
     typ = st.typical_session_value(mr, t1)
-    last_trained = mr.groupby("muscle")["date"].max()
+    last_trained = mr[mr["w"] >= 1.0].groupby("muscle")["date"].max()  # primary work only (pullovers don't "train" chest)
     top3 = {}
     for m, g in mr[mr["date"] > t1 - pd.Timedelta(days=27)].groupby("muscle"):
         top3[m] = [[e, num(v, 1)] for e, v in g.groupby("exercise")["w"].sum().sort_values(ascending=False).head(3).items()]
@@ -683,7 +683,8 @@ def build_strength(cfg: dict, enriched: pd.DataFrame, sets: pd.DataFrame, weight
     summary = {"sessions_week": int(len(sess_this_week)), "hard_sets7": hard7, "streak": streak,
                "rounds_week": rounds_week, "split": split, "last_by_type": last_by_type,
                "flat_lifts": [r["exercise"] for r in prog if r["status"] == "flat"],
-               "regressing_lifts": [r["exercise"] for r in prog if r["status"] == "regressing"]}
+               "regressing_lifts": [r["exercise"] for r in prog if r["status"] == "regressing"],
+               "next_session": st.next_session(split, logged[["date", "type"]], mr, emap, prog, today)}
     wk = w["date"].map(lambda d: pd.Timestamp(common.week_start(d)))
     summary["_weekly"] = pd.DataFrame({"sessions": logged.groupby("week").size(), "hard_sets": w.groupby(wk).size()})
     return payload, summary, s, mr
@@ -752,6 +753,11 @@ def build_health(cfg: dict, daily: pd.DataFrame, sleep: pd.DataFrame, hrv: pd.Da
     f["im"] = d["intensity_min_moderate"] + 2 * d["intensity_min_vigorous"]
     for c in ("deep_s", "light_s", "rem_s", "awake_s"):
         f[c] = sl[c] / 3600
+    f["need_h"] = sl["need_min"] / 60
+    f["need_base_h"] = sl["need_baseline_min"] / 60
+    for c in ("need_hrv_adj", "need_training_adj", "need_history_adj", "need_nap_adj"):
+        f[c] = sl[c]
+    f["debt_h"] = rd.sleep_debt(f["sleep_h"], f["need_h"])
     f["bed_min"] = [hl.clock_minutes(sl["bed_ts"].get(x)) if x in sl.index else np.nan for x in idx]
     f["wake_min"] = [hl.clock_minutes(sl["wake_ts"].get(x)) if x in sl.index else np.nan for x in idx]
     f["mid_min"] = [hl.sleep_midpoint_minutes(sl["bed_ts"].get(x), sl["total_s"].get(x)) if x in sl.index else np.nan for x in idx]
@@ -855,15 +861,40 @@ def build_health(cfg: dict, daily: pd.DataFrame, sleep: pd.DataFrame, hrv: pd.Da
     strain = hl.strain_days(f["rhr_day_z"], f["hrv_day_z"], f["resp_day_z"])
     strain_panel = {"days": [x.date() for x in strain[strain].index]}
 
+    # 13 sleep need vs sleep, and today's readiness (last night = today's row; falls back to the newest night)
+    f["load"] = load
+    f["load_ratio"] = rd.load_ratio(load)
+    f["strain"] = strain.reindex(idx, fill_value=False)
+    sleep_need_panel = {"sleep": pts(f["sleep_h"], 2), "need": pts(f["need_h"], 2), "need_base": pts(f["need_base_h"], 2),
+                        "debt": pts(f["debt_h"], 2), "debt_nights": rd.DEBT_NIGHTS, "debt_bounds": list(rd.DEBT_H)}
+    readiness = None
+    nights = f.index[f["sleep_h"].notna() | f["hrv"].notna()]
+    if len(nights):
+        x = nights[-1]
+        row = f.loc[x]
+        val = lambda k: None if pd.isna(row[k]) else float(row[k])
+        readiness = rd.assess({"hrv": val("hrv"), "hrv_z": val("hrv_day_z"), "hrv_status": row["hrv_status"] if isinstance(row["hrv_status"], str) else None,
+                               "rhr": val("rhr"), "rhr_z": val("rhr_day_z"), "sleep_h": val("sleep_h"), "need_h": val("need_h"),
+                               "debt_h": val("debt_h"), "load_ratio": val("load_ratio"), "strain": bool(row["strain"])})
+        readiness["date"] = x.date()
+        readiness["trend_note"] = rd.trend_note({fa["key"]: fa["status"] for fa in readiness["factors"]},
+                                                {h["key"]: h.get("status") for h in header})
+        readiness["is_today"] = x.date() == today
+        readiness["need_why"] = rd.need_reasons({k: row[k] for k in ("need_hrv_adj", "need_training_adj", "need_history_adj", "need_nap_adj")},
+                                                val("need_h"), val("need_base_h"))
+        sleep_need_panel["latest"] = {"date": x.date(), "sleep_h": num(row["sleep_h"], 2), "need_h": num(row["need_h"], 2),
+                                      "base_h": num(row["need_base_h"], 2), "debt_h": num(row["debt_h"], 2), "why": readiness["need_why"]}
+
     payload = {"header": header, "sentence": sentence, "hrv": hrv_panel, "rhr": rhr_panel, "sleep": sleep_panel,
                "regularity": regularity, "stress": stress_panel, "resp": resp_panel, "activity": activity_panel,
                "vo2max": v_panel, "weight": weight_panel, "load_recovery": lvr, "weekday": weekday_panel,
-               "strain": strain_panel, "baseline_days": bdays, "short_days": sdays,
+               "strain": strain_panel, "sleep_need": sleep_need_panel, "readiness": readiness, "baseline_days": bdays, "short_days": sdays,
                "intraday_from": "2026-07-01"}
     summary = {"header": header, "short_days": sdays, "n_metrics": n_metrics, "n_outside": len(outside),
                "hrv_avg7": header[0].get("avg7"), "rhr_avg7": header[1].get("avg7"),
                "hrv": header[0].get("value"), "hrv_status": header[0].get("status"),
-               "rhr": header[1].get("value"), "rhr_status": header[1].get("status"), "sentence": sentence}
+               "rhr": header[1].get("value"), "rhr_status": header[1].get("status"), "sentence": sentence,
+               "readiness": readiness}
     return payload, summary, f
 
 
@@ -887,6 +918,8 @@ def main():
     strength_payload, str_summary, prepared_sets, mrows = build_strength(cfg, enriched, sets, weight, today, str_first)
     health_payload, health_summary, health_frame = build_health(cfg, daily, sleep, hrv, weight, vo2, enriched, today)
     weekly = build_weekly(today, cyc_extra["weekly"], str_summary.pop("_weekly"), health_frame)
+    if health_summary.get("readiness"):  # same dict as in the health payload: the Overview card shows both
+        health_summary["readiness"]["plan"] = rd.plan(str_summary.get("next_session"), health_summary["readiness"]["verdict"])
 
     meta = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"), "data_through": data_through,
             "stale": (today - data_through).days > 3, "today": today, "first_day": first_day,

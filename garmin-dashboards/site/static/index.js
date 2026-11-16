@@ -6,6 +6,41 @@
   const X = D.data, root = document.getElementById("content");
   if (X.meta.stale) root.appendChild(D.el("p", { class: "sentence stale" }, `The newest data is from ${D.esc(D.dateLabel(X.meta.data_through))}, more than 3 days old. Check logs/sync.log.`));
 
+  // readiness for today (src/metrics/readiness.py): verdict + every factor with its rating, so the "why" is visible
+  const RD = X.health && X.health.readiness;
+  if (RD) {
+    const TONE = { go: "in_range", easy: "watch", rest: "out_of_range", unknown: "ok" };
+    const ST = { ok: ["in_range", "OK"], caution: ["watch", "Caution"], poor: ["out_of_range", "Poor"] };
+    const sec = D.el("section", { class: "readiness " + (TONE[RD.verdict] || "ok"), "aria-labelledby": "rd-h" });
+    const when = RD.is_today ? "Today" : `Based on the night to ${D.esc(D.dateLabel(RD.date))}`;
+    sec.innerHTML = `<div class="rd-head"><h2 id="rd-h"><span class="rd-when">${when}</span> <span class="rd-verdict">${D.esc(RD.label)}</span></h2>` +
+      `<p class="rd-text">${D.esc(RD.text)}</p></div>`;
+    if (RD.trend_note) sec.appendChild(D.el("p", { class: "rd-trend" }, D.esc(RD.trend_note)));
+    const PL = RD.plan;
+    if (PL) {
+      const PT = { go: "in_range", light: "watch", skip: "out_of_range", done: "ok" };
+      const box = D.el("div", { class: "rd-plan " + (PT[PL.status] || "ok") });
+      box.innerHTML = `<div class="rd-plan-head"><span class="rd-plan-label">Next up</span> <b>${D.esc(PL.title)}</b>` +
+        `<span class="rd-plan-meta">${D.esc(PL.targets)}${PL.since ? " · " + D.esc(PL.since) : ""}</span></div>` +
+        `<div class="rd-plan-muscles">${PL.muscles.map((m) => `<span class="rd-muscle">${D.esc(m)}</span>`).join("")}</div>` +
+        `<p class="rd-plan-action"><b>${D.esc(PL.action)}</b>${PL.hint ? " " + D.esc(PL.hint) : ""}</p>`;
+      sec.appendChild(box);
+    }
+    const ul = D.el("ul", { class: "rd-factors" });
+    for (const f of RD.factors) {
+      const [cls, lab] = ST[f.status] || ["ok", "No data"];
+      ul.appendChild(D.el("li", { class: "rd-factor" }, `<span class="chip ${cls}">${lab}</span><span class="rd-name">${D.esc(f.label)}</span>` +
+        `<span class="rd-val">${D.esc(f.value || "–")}</span><span class="rd-detail">${D.esc(f.detail || "")}</span>`));
+    }
+    sec.appendChild(ul);
+    if (RD.need_why) sec.appendChild(D.el("p", { class: "small rd-note" }, `Last night's sleep need (Garmin): ${D.esc(RD.need_why)}. ` +
+      `<a href="health.html#sleep-need">Sleep vs need →</a>`));
+    sec.appendChild(D.el("p", { class: "small rd-note" }, "Rules, not a black box: HRV and resting HR vs your 60-day normal (1 / 2 SD), last night vs sleep need (90 / 75 %), " +
+      "7-night sleep debt (3 / 6 h), 7- vs 28-day training load (1.3 / 1.5×). Rest if HRV, resting HR or the strain pattern is poor, or two factors are; easy if one is poor or two need caution. " +
+      "Next up = the split type after your last push / pull / shoulders session; a muscle counts as recovered 2+ days after its last primary work."));
+    root.appendChild(sec);
+  }
+
   const A = X.attention || { sentence: "", areas: [] };
   const sec = D.el("section", { class: "synthesis", "aria-labelledby": "syn-h" });
   sec.appendChild(D.el("h2", { id: "syn-h", class: "visually-hidden" }, "This week"));

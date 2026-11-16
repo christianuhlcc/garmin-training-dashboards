@@ -120,3 +120,43 @@ def progression_status(e1rms: list[float], tol: float = 0.01) -> str:
     if recent >= before * (1 - 0.03):
         return "flat"
     return "regressing"
+
+
+RECOVERED_DAYS = 2  # >= 2 days since a muscle's last primary work = recovered; 1 day = caution; same day = not yet
+
+
+def primary_group(exercise: str, emap: dict) -> str | None:
+    """The muscle group an exercise mainly trains (group of its highest-weighted muscle)."""
+    muscles = (emap["exercises"].get(exercise) or {}).get("muscles") or {}
+    if not muscles:
+        return None
+    return emap["regions"][max(muscles, key=muscles.get)]["group"]
+
+
+def next_session(split: list[str], logged: pd.DataFrame, mr: pd.DataFrame, emap: dict, prog: list[dict], today) -> dict | None:
+    """What to train next and whether its target muscles are recovered.
+
+    logged: one row per logged session (date, type). Next = the split type after the most recent split session
+    (legs / core sessions sit outside the rotation and don't move it). Target muscles = regions of that group;
+    recovery counts only *primary* work (muscle weight 1.0), so e.g. pullovers don't mark chest as trained."""
+    if not split:
+        return None
+    t = pd.Timestamp(today)
+    rot = logged[logged["type"].isin(split)].sort_values("date")
+    nxt = split[(split.index(rot["type"].iloc[-1]) + 1) % len(split)] if len(rot) else split[0]
+    last_of = rot[rot["type"] == nxt]["date"].max() if (rot["type"] == nxt).any() else None
+    today_types = sorted(set(logged[logged["date"] == t]["type"]))
+    primary = mr[mr["w"] >= 1.0]
+    muscles = []
+    for m, r in emap["regions"].items():
+        if r["group"] != nxt:
+            continue
+        d = primary[primary["muscle"] == m]["date"].max()
+        days = None if pd.isna(d) else int((t - d).days)
+        status = "recovered" if days is None or days >= RECOVERED_DAYS else "caution" if days == 1 else "not_recovered"
+        muscles.append({"key": m, "label": r["label"], "last": None if pd.isna(d) else d.date(), "days": days, "status": status})
+    hints = [{"exercise": p["exercise"], "status": p["status"]} for p in prog
+             if p["status"] in ("flat", "regressing") and primary_group(p["exercise"], emap) == nxt]
+    return {"type": nxt, "last_of_type": None if last_of is None or pd.isna(last_of) else last_of.date(),
+            "days_since_type": None if last_of is None or pd.isna(last_of) else int((t - last_of).days),
+            "today_types": today_types, "muscles": muscles, "hints": hints}

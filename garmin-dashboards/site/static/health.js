@@ -123,6 +123,50 @@
     }, "short");
   }
 
+  // ---------------------------------------------------------------- 3b sleep vs need, sleep debt
+  if (H.sleep_need) {
+    const N = H.sleep_need, L = N.latest;
+    const p = D.panel(grid, { id: "sleep-need", title: "Sleep vs need", full: true,
+      caption: L ? `Last night ${D.hours(L.sleep_h)}. ${L.why ? D.esc(L.why) : "Need " + D.hours(L.need_h)}. ${N.debt_nights}-night sleep debt <b>${L.debt_h >= 1 / 60 ? D.hours(L.debt_h) : "none"}</b>.`
+        : "Sleep per night against Garmin's sleep need.",
+      method: `Sleep need is Garmin's nightly estimate (usual need, adjusted for HRV, training load, recent sleep and naps). ` +
+        `Sleep debt = the sum of (need − sleep) over the last ${N.debt_nights} nights, floored at zero, so a long night pays back a short one. ` +
+        `Debt above ${N.debt_bounds[0]} h counts as caution and above ${N.debt_bounds[1]} h as poor in today's readiness on the Overview.`,
+      table: () => {
+        const need = new Map(N.need.map((x) => [x[0], x[1]])), debt = new Map(N.debt.map((x) => [x[0], x[1]]));
+        return { cols: [{ key: "d", label: "Night" }, { key: "s", label: "Sleep", num: true, fmt: D.hours }, { key: "n", label: "Need", num: true, fmt: D.hours },
+          { key: "g", label: "Gap", num: true, fmt: (v) => (v === null || v === undefined ? "–" : (v > 0 ? "−" : "+") + D.hours(Math.abs(v))) },
+          { key: "debt", label: "7-night debt", num: true, fmt: D.hours }],
+          rows: D.filterPts(N.sleep).reverse().map(([d, v]) => ({ d, s: v, n: need.get(d), g: need.get(d) == null || v == null ? null : need.get(d) - v, debt: debt.get(d) })) };
+      } });
+    D.chart(p.body, (ctx) => {
+      const c = ctx.c, need = new Map(N.need.map((x) => [x[0], x[1]]));
+      const bars = D.filterPts(N.sleep).map(([d, v]) => ({ value: [d, v],
+        itemStyle: { color: need.get(d) != null && v < need.get(d) * 0.9 ? c.s[3] : c.s[0], borderRadius: [2, 2, 0, 0] } }));
+      return D.base(ctx, {
+        _aria: "Sleep per night against sleep need", legend: { show: false },
+        tooltip: Object.assign(D.base(ctx).tooltip, { formatter: D.tooltipFormatter((v) => D.hours(v)) }),
+        xAxis: D.timeAxis(ctx), yAxis: D.valueAxis(ctx, "hours", { min: 0, scale: false }),
+        series: [D.bar("Sleep", bars, c.s[0], { barMaxWidth: 14 }),
+          D.line("Sleep need", D.filterPts(N.need), c.ink, { z: 5, step: "middle" }),
+          D.line("Usual need", D.filterPts(N.need_base), c.muted, { z: 4, lineStyle: { type: "dashed", width: 1, color: c.muted } })],
+      });
+    }, "tall");
+    D.chart(p.body, (ctx) => {
+      const c = ctx.c;
+      return D.base(ctx, {
+        _aria: "Seven-night sleep debt", legend: { show: false }, grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
+        xAxis: D.timeAxis(ctx), yAxis: D.valueAxis(ctx, `${N.debt_nights}-night debt, h`, { min: 0, scale: false }),
+        series: [D.line("Sleep debt", D.filterPts(N.debt), c.s[3], { areaStyle: { opacity: 0.15 },
+          markLine: { silent: true, symbol: "none", label: { position: "insideStartTop", color: c.muted, fontSize: 11 },
+            lineStyle: { color: c.axis, type: "dashed" },
+            data: [{ yAxis: N.debt_bounds[0], label: { formatter: `caution ${N.debt_bounds[0]} h` } }, { yAxis: N.debt_bounds[1], label: { formatter: `poor ${N.debt_bounds[1]} h` } }] } })],
+      });
+    }, "short");
+    p.body.insertBefore(D.el("p", { class: "legend-note" }, '<span class="key" style="background:var(--s1)"></span> Sleep &nbsp; ' +
+      '<span class="key" style="background:var(--s4)"></span> Sleep under 90 % of need &nbsp; — Sleep need &nbsp; ┄ Usual need'), p.body.firstChild);
+  }
+
   // ---------------------------------------------------------------- 4 sleep regularity
   {
     const R = H.regularity;
@@ -233,7 +277,7 @@
         rows: [...V.generic.map((x) => ({ d: x[0], k: "generic", v: x[1], s: x[2] })), ...V.cycling.map((x) => ({ d: x[0], k: "cycling", v: x[1], s: x[2] }))]
           .filter((r) => D.inRange(r.d)).sort((a, b) => b.d.localeCompare(a.d)) }) });
     D.chart(p.body, (ctx) => D.base(ctx, {
-      _aria: "VO2max estimates", tooltip: Object.assign(D.base(ctx).tooltip, { trigger: "item", formatter: (q) => `<b>${D.dateLabel(q.value[0])}</b><br>${q.marker}${q.seriesName}: <b>${D.fmt(q.value[1], 1)}</b>` }),
+      _aria: "VO2max estimates", tooltip: Object.assign(D.base(ctx).tooltip, { trigger: "item", formatter: (q) => `<b>${D.dateLabel(q.value[0])}</b><br>${q.marker}${q.seriesName === "_generic_pts" ? "Generic" : q.seriesName}: <b>${D.fmt(q.value[1], 1)}</b>` }),
       xAxis: D.timeAxis(ctx), yAxis: D.valueAxis(ctx, "ml/kg/min"),
       series: [D.line("Generic", V.generic.map((x) => [x[0], x[1]]), ctx.c.s[0], { step: "end", showSymbol: true }),
         D.dots("Cycling", V.cycling.map((x) => [x[0], x[1]]), ctx.c.s[1], ctx, { symbolSize: 10 })],
@@ -339,7 +383,7 @@
     D.onRefresh(draw);
   }
   D.arrange(root, [
-    { id: "g-recovery", title: "Recovery", intro: "Each night against your own 60-day range.", ids: ["hrv", "rhr", "sleep", "regularity"] },
+    { id: "g-recovery", title: "Recovery", intro: "Each night against your own 60-day range.", ids: ["hrv", "rhr", "sleep", "sleep-need", "regularity"] },
     { id: "g-connections", title: "Connections", intro: "What moves your recovery: training load, daily stress, strain and the day of the week.", ids: ["lvr", "stress", "strain", "weekday"] },
     { id: "g-longterm", title: "Long-term", ids: ["activity", "vo2", "weight", "resp"] },
   ]);
