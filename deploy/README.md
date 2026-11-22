@@ -30,7 +30,7 @@ Mac push.py ◄── s3://logbook-…/backup/garmin.db.gz (read copy for local 
 | `server/run.sh` | The job. Output: `journalctl -u garmin-sync`. |
 | `server/garmin-sync.{service,timer}`, `server/garmin-inbox.path` | systemd units (memory cap 700 MB, hardened). |
 | `deploy.sh` | Mac → S3 → SSM Run Command: ship code (and once, `--with-data`), run `setup.sh`. |
-| `set-secrets.sh` | Garmin API key + site password hash → SSM. Password only in the Keychain. |
+| `set-secrets.sh` | Garmin API key + site password hash → SSM. Password in 1Password (item "Logbook") + Keychain (for `push.py`). |
 | `mac/push.py`, `mac/com.christianuhl.logbook-push.plist` | Mac's daily job (replaces `com.christianuhl.garmin-sync`). |
 | shopmate repo: `deploy/terraform/logbook.tf` | DNS record, private bucket, instance permissions, `/garmin/prod/{DOMAIN,BUCKET}`. |
 | shopmate repo: `nginx/nginx.prod.conf.template`, `docker-compose.prod.yml` | `include /etc/nginx/logbook/*.conf` + mounts of `/srv/garmin/*`. |
@@ -52,7 +52,9 @@ Mac push.py ◄── s3://logbook-…/backup/garmin.db.gz (read copy for local 
 
 1. **AWS** (shopmate repo, branch `logbook-hosting`): `cd deploy/terraform && terraform apply logbook.tfplan`
    (DNS, bucket, permissions; 11 new resources, nothing changed).
-2. **Secrets**: `deploy/set-secrets.sh` (creates the password in the Keychain, puts key + hash in SSM).
+2. **Secrets**: install the 1Password CLI (`brew install --cask 1password-cli`; 1Password → Settings → Developer →
+   *Integrate with 1Password CLI*), then `deploy/set-secrets.sh`: creates the password in 1Password (item "Logbook")
+   and the Keychain, puts key + hash in SSM.
 3. **Shopmate nginx**: merge `logbook-hosting` to shopmate `main` → CI deploys; nginx now includes the (empty) logbook dir.
 4. **Stop the Mac's sync, final sync, migrate**:
    ```sh
@@ -63,7 +65,7 @@ Mac push.py ◄── s3://logbook-…/backup/garmin.db.gz (read copy for local 
    ```
    `setup.sh` gets the cert (webroot via the running nginx, no downtime), installs the nginx snippet, starts the first run.
    Don't re-sync from scratch on the server: intraday data older than ~4.5 months exists only in this DB.
-5. **Phone**: open https://logbook.uhl-steine-scherben.org (password: `security find-generic-password -s logbook -a logbook -w`),
+5. **Phone**: open https://logbook.uhl-steine-scherben.org (user `logbook`, password from 1Password item "Logbook"),
    save it in the browser, "Add to Home Screen". Build the Shortcut (below).
 6. **Mac push**: `cp deploy/mac/com.christianuhl.logbook-push.plist ~/Library/LaunchAgents/ && launchctl load ~/Library/LaunchAgents/com.christianuhl.logbook-push.plist`
 
