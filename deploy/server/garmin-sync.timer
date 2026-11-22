@@ -1,0 +1,11 @@
+# Regular syncs (sleep/HRV are final in the morning; evening run picks up the day's training).
+[Unit]
+Description=Garmin sync a few times a day
+
+[Timer]
+OnCalendar=*-*-* 07:30,13:30,20:30 Europe/Berlin
+RandomizedDelaySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

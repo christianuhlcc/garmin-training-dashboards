@@ -12,6 +12,7 @@ into a local SQLite database. Use this file to understand what is where before q
 | `sync.sh` | Wrapper: creates `.venv` with `fitdecode` if needed, then runs `garmin_sync.py`. |
 | `weekly_review.py` | Once per completed ISO week: builds a brief (`garmin-dashboards/src/weekly_brief.py`), asks `claude -p` with the skill `.claude/skills/weekly-training-review` and stores the review in table `weekly_reviews` + `data/weekly_reviews/<week>.{md,json}`. Run with `garmin-dashboards/.venv/bin/python`. Sends the brief to Anthropic. |
 | `notes_import.py` | Parses the hand-written strength log in Apple Notes ("Workout 2026") into `manual_*` tables. Called by the sync, or runnable on its own. |
+| `deploy/` | Hosting on the shopmate EC2 instance: nginx snippet, setup, systemd job, Mac push, deploy + secrets scripts. See `deploy/README.md`. |
 | `notes/<title>.txt` | Plain-text snapshot of each imported note (refreshed on every import). |
 | `data/fit/<activity_id>.zip` | Original activity files (FIT inside a zip), as uploaded by the watch. |
 | `.env` | `GARMIN_API_KEY=...` (secret, never print or commit it). |
@@ -30,6 +31,12 @@ into a local SQLite database. Use this file to understand what is where before q
 ./sync.sh --skip-notes   # don't re-import the Apple Notes strength log
 .venv/bin/python notes_import.py   # re-import only the notes (no Garmin API calls)
 ```
+
+**Hosting (see `deploy/README.md`):** the dashboards move to https://logbook.uhl-steine-scherben.org on the shopmate
+EC2 instance (password-protected). After the rollout there, the **server owns `garmin.db`** and does the Garmin sync
+(systemd timer + uploads from the iPhone Shortcut / "Sync now" button). The Mac runs `deploy/mac/push.py` instead of
+`daily.sh`: it replaces the local `garmin.db` with the server's nightly snapshot (local writes are lost), pushes the
+Apple Note, and generates + uploads the weekly review. Until the rollout is done, the launchd setup below still applies.
 
 **Schedule:** `daily.sh` (sync + dashboard rebuild) runs via launchd (`~/Library/LaunchAgents/com.christianuhl.garmin-sync.plist`)
 daily at 08:30 *and* at every login/boot, because the Mac is often off for days and launchd drops calendar runs missed

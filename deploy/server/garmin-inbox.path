@@ -1,0 +1,11 @@
+# Run the sync as soon as something is uploaded (iPhone Shortcut, "Sync now" button, Mac push).
+# run.sh empties the inbox as its first step; while it is not empty this unit keeps (re)triggering.
+[Unit]
+Description=Watch the logbook upload inbox
+
+[Path]
+DirectoryNotEmpty=/srv/garmin/upload/inbox
+Unit=garmin-sync.service
+
+[Install]
+WantedBy=paths.target

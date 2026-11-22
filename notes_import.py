@@ -428,7 +428,8 @@ def main():
         title = args.title or args.file.stem
         year_m = re.search(r"20\d\d", title)
         sessions = parse_note(args.file.read_text(), int(year_m.group()) if year_m else date.today().year)
-        print(store(db, title, sessions))
+        n_workouts, n_sets = store(db, title, sessions)
+        print(f"notes: '{title}' from {args.file}: {n_workouts} sessions, {n_sets} sets")
     else:
         sync(db, query=args.query)
     db.close()

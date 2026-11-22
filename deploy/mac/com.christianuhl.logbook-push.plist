@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Mac side of the logbook: deploy/mac/push.py daily at 09:00 and at every login/boot (the Mac is often off).
+     Replaces com.christianuhl.garmin-sync (the server syncs Garmin now). Install:
+       cp deploy/mac/com.christianuhl.logbook-push.plist ~/Library/LaunchAgents/
+       launchctl load ~/Library/LaunchAgents/com.christianuhl.logbook-push.plist -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.christianuhl.logbook-push</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/christianuhl/workspace/garmin/garmin-dashboards/.venv/bin/python</string>
+		<string>/Users/christianuhl/workspace/garmin/deploy/mac/push.py</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/Users/christianuhl/workspace/garmin</string>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>9</integer>
+		<key>Minute</key>
+		<integer>0</integer>
+	</dict>
+	<key>StandardOutPath</key>
+	<string>/Users/christianuhl/workspace/garmin/logs/push.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/christianuhl/workspace/garmin/logs/push.log</string>
+</dict>
+</plist>

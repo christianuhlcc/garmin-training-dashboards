@@ -4,6 +4,9 @@
     garmin-dashboards/.venv/bin/python weekly_review.py            # last complete week, only if no review exists yet
     garmin-dashboards/.venv/bin/python weekly_review.py --week 2026-11-05 --force
     garmin-dashboards/.venv/bin/python weekly_review.py --dry-run  # print the brief, don't call Claude
+    garmin-dashboards/.venv/bin/python weekly_review.py --import data/weekly_reviews/2026-W46.json  # no Claude call
+
+--import stores a review generated elsewhere (the server gets reviews pushed from the Mac, see deploy/README.md).
 
 Pipeline: weekly brief (garmin-dashboards/src/weekly_brief.py, every number precomputed) -> `claude -p` with the
 project skill `weekly-training-review` (.claude/skills/) and a JSON schema -> stored in garmin.db table
@@ -101,13 +104,49 @@ def to_markdown(week: dict, rv: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def store(db: sqlite3.Connection, doc: dict) -> str:
+    """Write one review document (the data/weekly_reviews/<week>.json format) to the table and to OUT."""
+    week, rv, brief = doc["week"], doc["review"], doc["brief"]
+    md = to_markdown(week, rv)
+    OUT.mkdir(parents=True, exist_ok=True)
+    (OUT / f"{week['iso']}.md").write_text(md)
+    (OUT / f"{week['iso']}.json").write_text(json.dumps(doc, indent=1, ensure_ascii=False))
+    db.execute("INSERT OR REPLACE INTO weekly_reviews VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+               (week["iso"], week["start"], week["end"], doc["generated_at"], doc.get("model"), doc.get("cost_usd"),
+                doc.get("skill_used"), rv["headline"], json.dumps(rv, ensure_ascii=False), md,
+                json.dumps(brief, ensure_ascii=False)))
+    db.commit()
+    return md
+
+
+def import_file(db: sqlite3.Connection, path: Path) -> int:
+    doc = json.loads(path.read_text())
+    missing = [k for k in ("week", "review", "brief") if k not in doc] + \
+              [k for k in SCHEMA["required"] if k not in doc.get("review", {})]
+    if missing:
+        raise SystemExit(f"{path}: not a weekly review document (missing {', '.join(missing)})")
+    # Files written before generated_at/skill_used existed: fall back to the file time / unknown.
+    doc.setdefault("generated_at", datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
+    doc.setdefault("skill_used", None)
+    store(db, doc)
+    log(f"imported {doc['week']['iso']}: \"{doc['review']['headline']}\"")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--week", type=date.fromisoformat, help="any day of the week to review (default: last complete week)")
     ap.add_argument("--force", action="store_true", help="regenerate even if a review exists")
     ap.add_argument("--dry-run", action="store_true", help="print the brief and exit")
     ap.add_argument("--no-build", action="store_true", help="don't run `make metrics` first")
+    ap.add_argument("--import", dest="import_path", type=Path, metavar="JSON",
+                    help="store a review JSON generated elsewhere (no Claude call)")
     args = ap.parse_args()
+
+    if args.import_path:
+        db = sqlite3.connect(DB)
+        db.execute(TABLE)
+        return import_file(db, args.import_path)
 
     monday = common.week_start(args.week) if args.week else weekly_brief.last_complete_week(date.today())
     iso = weekly_brief.iso_label(monday)
@@ -131,16 +170,9 @@ def main():
     rv = out["structured_output"]
     model = ",".join((out.get("modelUsage") or {}).keys())
     skill_used = int((out.get("num_turns") or 1) > 1)  # the skill is loaded through a tool call (an extra turn)
-    md = to_markdown(brief["week"], rv)
-    OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / f"{iso}.md").write_text(md)
-    (OUT / f"{iso}.json").write_text(json.dumps({"week": brief["week"], "review": rv, "model": model,
-                                                 "cost_usd": out.get("total_cost_usd"), "brief": brief}, indent=1, ensure_ascii=False))
-    db.execute("INSERT OR REPLACE INTO weekly_reviews VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-               (iso, brief["week"]["start"], brief["week"]["end"], datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
-                model, out.get("total_cost_usd"), skill_used, rv["headline"], json.dumps(rv, ensure_ascii=False), md,
-                json.dumps(brief, ensure_ascii=False)))
-    db.commit()
+    store(db, {"week": brief["week"], "review": rv, "model": model, "cost_usd": out.get("total_cost_usd"),
+               "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"), "skill_used": skill_used,
+               "brief": brief})
     log(f"{iso}: \"{rv['headline']}\" (model {model}, ${out.get('total_cost_usd', 0):.2f}, skill used: {bool(skill_used)})")
     return 0
 

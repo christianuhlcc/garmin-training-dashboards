@@ -83,6 +83,8 @@ a { color: var(--s1); }
 button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .freshness { color: var(--muted); font-size: 12px; }
 .stale { color: var(--bad-text); font-weight: 600; }
+.sync-btn { font-size: 12px; padding: 3px 8px; }
+.sync-btn:disabled { opacity: .6; cursor: default; }
 
 /* headings */
 .page-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 22px 0 6px; }

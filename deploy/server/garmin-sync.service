@@ -1,0 +1,31 @@
+# Garmin sync + dashboards for the logbook site. Installed by setup.sh to /etc/systemd/system/.
+# Started by garmin-sync.timer and garmin-inbox.path; run by hand: sudo systemctl start garmin-sync
+# Log: journalctl -u garmin-sync   (journald rotates it)
+[Unit]
+Description=Garmin sync + logbook dashboards
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=garmin
+Group=garmin
+WorkingDirectory=/opt/garmin
+ExecStart=/opt/garmin/deploy/server/run.sh
+# Local calendar days: date.today(), the sync window and "data through" must follow Berlin, not UTC.
+Environment=TZ=Europe/Berlin HOME=/opt/garmin
+TimeoutStartSec=45min
+# Shares a 2 GiB host with shopmate (JVM ~1 GiB, postgres, collector). A normal run peaks at ~200 MB.
+MemoryMax=700M
+Nice=10
+IOSchedulingClass=idle
+# Hardening: the job may write only its own two trees.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/garmin /srv/garmin
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes

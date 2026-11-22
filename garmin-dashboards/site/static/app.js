@@ -107,6 +107,25 @@
       fresh.innerHTML = "Data through " + D.esc(D.dateLabel(D.meta.data_through)) +
         (D.meta.stale ? ' · <span class="stale">older than 3 days</span>' : "");
     }
+    // "Sync now": only on the hosted site (https). PUT /inbox/sync makes the server sync Garmin + rebuild
+    // (deploy/server/logbook.nginx.conf); the browser reuses the site's basic-auth credentials.
+    const syncBtn = document.getElementById("sync-btn");
+    if (syncBtn && location.protocol === "https:") {
+      const status = document.getElementById("sync-status");
+      syncBtn.hidden = false;
+      syncBtn.addEventListener("click", async () => {
+        syncBtn.disabled = true; status.textContent = "Requesting sync…";
+        try {
+          const r = await fetch("inbox/sync", { method: "PUT", body: "", credentials: "same-origin" });
+          status.textContent = r.ok ? "Sync started. Reload in about a minute."
+            : r.status === 429 ? "A sync just ran. Try again in a minute."
+            : "Sync request failed (HTTP " + r.status + ").";
+        } catch (e) {
+          status.textContent = "Sync request failed (offline?).";
+        }
+        setTimeout(() => { syncBtn.disabled = false; }, 60000);
+      });
+    }
     const seg = document.getElementById("range");
     if (seg) {
       seg.querySelectorAll("button").forEach((b) => {
