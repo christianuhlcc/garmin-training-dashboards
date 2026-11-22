@@ -126,8 +126,8 @@ else
   echo "nginx rejected logbook.conf - removed it, shopmate unaffected"; exit 1
 fi
 
-# First build if the site is still empty (normally the timer / inbox does this).
-if [ ! -e "$SRV/site/index.html" ] && [ -e "$APP/garmin.db" ]; then
-  echo "--- first run"
+# Run once now so a code deploy (site templates, metrics) is live right away, not at the next timer run.
+if [ -e "$APP/garmin.db" ]; then
+  echo "--- sync + rebuild started (journalctl -u garmin-sync)"
   systemctl start --no-block garmin-sync.service
 fi

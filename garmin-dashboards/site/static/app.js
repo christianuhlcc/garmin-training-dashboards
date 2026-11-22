@@ -104,7 +104,12 @@
     applyTheme(store.get(THEME_KEY) || "auto");
     const fresh = document.getElementById("freshness");
     if (fresh) {
-      fresh.innerHTML = "Data through " + D.esc(D.dateLabel(D.meta.data_through)) +
+      // generated_at = end of the last sync + build on the server ("YYYY-MM-DD HH:MM", Berlin time).
+      const [genDay, genTime] = String(D.meta.generated_at || "").split(" ");
+      const updated = genDay ? "Updated " + D.dateLabel(genDay) + (genTime ? ", " + genTime : "") : "";
+      const through = D.meta.data_through && D.meta.data_through !== genDay
+        ? "data through " + D.dateLabel(D.meta.data_through) : "";
+      fresh.innerHTML = D.esc([updated, through].filter(Boolean).join(" · ")) +
         (D.meta.stale ? ' · <span class="stale">older than 3 days</span>' : "");
     }
     // "Sync now": only on the hosted site (https). PUT /inbox/sync makes the server sync Garmin + rebuild
@@ -117,7 +122,7 @@
         syncBtn.disabled = true; status.textContent = "Requesting sync…";
         try {
           const r = await fetch("inbox/sync", { method: "PUT", body: "", credentials: "same-origin" });
-          status.textContent = r.ok ? "Sync started. Reload in about a minute."
+          status.textContent = r.ok ? "Sync started. Reload (↻) in about 15 seconds."
             : r.status === 429 ? "A sync just ran. Try again in a minute."
             : "Sync request failed (HTTP " + r.status + ").";
         } catch (e) {
@@ -126,6 +131,9 @@
         setTimeout(() => { syncBtn.disabled = false; }, 60000);
       });
     }
+    // Reload: the Home Screen web app (standalone) has no browser controls.
+    const reloadBtn = document.getElementById("reload-btn");
+    if (reloadBtn) reloadBtn.addEventListener("click", () => location.reload());
     const seg = document.getElementById("range");
     if (seg) {
       seg.querySelectorAll("button").forEach((b) => {

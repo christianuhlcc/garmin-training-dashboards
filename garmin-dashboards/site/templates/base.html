@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ title }} · Logbook</title>
 <link rel="stylesheet" href="static/style.css">
+<meta name="apple-mobile-web-app-title" content="Logbook">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="static/icon-180.png">
+<link rel="icon" type="image/png" href="static/icon-180.png">
 {% if page == "map" %}<link rel="stylesheet" href="static/leaflet/leaflet.css">{% endif %}
 <script>
   /* apply the stored theme before first paint */
@@ -26,6 +31,7 @@
       <button type="button" data-range="6w">6 weeks</button><button type="button" data-range="3m">3 months</button><button type="button" data-range="12m">12 months</button><button type="button" data-range="all">All</button>
     </div>
     {% endif %}
+    <button type="button" class="icon-btn" id="reload-btn" aria-label="Reload page" title="Reload">↻</button>
     <button type="button" class="icon-btn" id="theme-btn" aria-label="Theme: Auto"><span class="small-label">Theme</span> Auto</button>
   </div>
 </header>
