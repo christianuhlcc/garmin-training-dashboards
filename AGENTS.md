@@ -32,13 +32,14 @@ into a local SQLite database. Use this file to understand what is where before q
 .venv/bin/python notes_import.py   # re-import only the notes (no Garmin API calls)
 ```
 
-**Hosting (see `deploy/README.md`):** the dashboards move to https://logbook.uhl-steine-scherben.org on the shopmate
-EC2 instance (password-protected). After the rollout there, the **server owns `garmin.db`** and does the Garmin sync
-(systemd timer + uploads from the iPhone Shortcut / "Sync now" button). The Mac runs `deploy/mac/push.py` instead of
-`daily.sh`: it replaces the local `garmin.db` with the server's nightly snapshot (local writes are lost), pushes the
-Apple Note, and generates + uploads the weekly review. Until the rollout is done, the launchd setup below still applies.
+**Hosting (live since 2026-11-22, see `deploy/README.md`):** the dashboards run at https://logbook.uhl-steine-scherben.org
+on the shopmate EC2 instance (password-protected). The **server owns `garmin.db`** and does the Garmin sync (systemd
+timer 07:30/13:30/20:30 + uploads from the iPhone Shortcut / "Sync now" button / Mac). The local `garmin.db` is only a
+copy: `deploy/mac/push.py` replaces it with the server's latest snapshot (local writes are lost), pushes the Apple Note,
+and generates + uploads the weekly review. Don't run `./sync.sh` on the Mac any more (it would only write the copy).
+Server log: `aws ssm start-session --target i-0fda569fb7ada49b5`, then `sudo journalctl -u garmin-sync`.
 
-**Schedule:** `daily.sh` (sync + dashboard rebuild) runs via launchd (`~/Library/LaunchAgents/com.christianuhl.garmin-sync.plist`)
+**Schedule (before 2026-11-22, Mac only; launchd job removed):** `daily.sh` (sync + dashboard rebuild) runs via launchd (`~/Library/LaunchAgents/com.christianuhl.garmin-sync.plist`)
 daily at 08:30 *and* at every login/boot, because the Mac is often off for days and launchd drops calendar runs missed
 while powered off. It waits up to 10 min for the network. Catch-up is automatic: an incremental run always covers
 `last_window_end − 3 days .. today`, and `last_window_end` only advances after an error-free run, so a failed catch-up is
