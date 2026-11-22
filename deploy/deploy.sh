@@ -12,7 +12,11 @@ cd "$(dirname "$0")/.."
 export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-eu-central-1}
 
 WITH_DATA=false
-[ "${1:-}" = "--with-data" ] && WITH_DATA=true
+case "${1:-}" in
+  "") ;;
+  --with-data) WITH_DATA=true ;;
+  *) echo "unknown argument '$1' (only --with-data)"; exit 2 ;;
+esac
 
 INSTANCE=$(aws ec2 describe-instances --filters Name=tag:Name,Values=shopmate Name=instance-state-name,Values=running \
   --query 'Reservations[0].Instances[0].InstanceId' --output text)
@@ -24,7 +28,7 @@ export COPYFILE_DISABLE=1   # no macOS ._ files in the tarballs
 
 echo "--- code bundle"
 { git ls-files -co --exclude-standard; echo garmin-dashboards/config.yaml; } | sort -u | while read -r f; do [ -f "$f" ] && echo "$f"; done > "$STAGE/files"
-tar -czf "$STAGE/code.tgz" --no-mac-metadata -T "$STAGE/files"
+tar -czf "$STAGE/code.tgz" --no-mac-metadata --no-xattrs -T "$STAGE/files"
 echo "$(wc -l < "$STAGE/files" | tr -d ' ') files, $(du -h "$STAGE/code.tgz" | cut -f1)"
 aws s3 cp --only-show-errors "$STAGE/code.tgz" "s3://$BUCKET/deploy/code.tgz"
 
@@ -40,7 +44,7 @@ if $WITH_DATA; then
   echo "--- data bundle"
   # Consistent snapshot (WAL mode: copying the file alone could miss committed pages still in garmin.db-wal).
   sqlite3 garmin.db ".backup '$STAGE/garmin.db'"
-  tar -czf "$STAGE/data.tgz" --no-mac-metadata \
+  tar -czf "$STAGE/data.tgz" --no-mac-metadata --no-xattrs \
     -C "$STAGE" garmin.db \
     -C "$PWD" data/fit data/weekly_reviews notes garmin-dashboards/manual garmin-dashboards/build/cache
   echo "$(du -h "$STAGE/data.tgz" | cut -f1)"

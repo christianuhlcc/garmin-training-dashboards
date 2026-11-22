@@ -3,7 +3,7 @@
 Description=Garmin sync a few times a day
 
 [Timer]
-OnCalendar=*-*-* 07:30,13:30,20:30 Europe/Berlin
+OnCalendar=*-*-* 07,13,20:30:00 Europe/Berlin
 RandomizedDelaySec=5min
 Persistent=true
 
