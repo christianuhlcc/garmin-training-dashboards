@@ -2,12 +2,15 @@
 # Write the logbook's secrets to SSM Parameter Store (SecureString, read by deploy/server/setup.sh).
 #
 #   deploy/set-secrets.sh            GARMIN_API_KEY from ./.env; site password reused if it exists, else created
-#   deploy/set-secrets.sh --rotate   new random site password (update the iPhone Shortcut afterwards)
+#   deploy/set-secrets.sh --rotate   new random site password + cookie token (update the iPhone Shortcut afterwards;
+#                                    every browser / Home Screen app has to log in once more)
 #
 # The site password (user "logbook") is kept in three places, never printed:
 #   1Password    item "Logbook" (login, URL https://logbook.uhl-steine-scherben.org): for you and the phone
 #   Keychain     service "logbook", account "logbook": read unattended by deploy/mac/push.py (launchd)
 #   SSM          only its bcrypt hash, /garmin/prod/HTPASSWD
+# Plus the "remember me" cookie token (64 hex chars), only in SSM /garmin/prod/COOKIE_TOKEN: nginx hands it out as
+# a 1-year cookie after a successful basic auth, so the iPhone Home Screen app doesn't ask on every launch.
 # An existing password is taken from the Keychain, else from 1Password (e.g. on a new Mac).
 # Needs the 1Password CLI (`brew install --cask 1password-cli`, then 1Password → Settings → Developer →
 # "Integrate with 1Password CLI"). Optional: OP_VAULT=<vault> (default: your default vault).
@@ -71,4 +74,12 @@ echo "GARMIN_API_KEY -> /garmin/prod/GARMIN_API_KEY"
 hash=$(printf '%s' "$pw" | htpasswd -niB -C 5 "$USER_NAME" | head -1)
 aws ssm put-parameter --name /garmin/prod/HTPASSWD --type SecureString --overwrite --value "$hash" >/dev/null
 echo "htpasswd (bcrypt) -> /garmin/prod/HTPASSWD   user: $USER_NAME"
+token=$(aws ssm get-parameter --name /garmin/prod/COOKIE_TOKEN --with-decryption --query Parameter.Value --output text 2>/dev/null || true)
+if [[ ! "$token" =~ ^[0-9a-f]{64}$ ]] || [ "${1:-}" = "--rotate" ]; then
+  token=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
+  aws ssm put-parameter --name /garmin/prod/COOKIE_TOKEN --type SecureString --overwrite --value "$token" >/dev/null
+  echo "new cookie token -> /garmin/prod/COOKIE_TOKEN"
+else
+  echo "cookie token unchanged (/garmin/prod/COOKIE_TOKEN)"
+fi
 echo "next: deploy/deploy.sh"

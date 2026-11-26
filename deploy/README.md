@@ -39,6 +39,13 @@ Mac push.py ◄── s3://logbook-…/backup/garmin.db.gz (read copy for local 
 
 - Basic auth over HTTPS only (HTTP redirects, HSTS). User `logbook`, 24 random characters (~143 bits), bcrypt cost 5
   (checked on every request, so cheap; the strength is the password). A missing htpasswd file means 403, never open.
+- "Remember me" cookie, because iOS Home Screen web apps forget basic-auth credentials on every cold start but keep
+  cookies: after a successful basic auth nginx sets `logbook_auth=<token>` (1 year, `Secure; HttpOnly; SameSite=Lax`),
+  and a request with that exact token skips basic auth. The token is 64 hex chars (256 bits), only in SSM
+  `/garmin/prod/COOKIE_TOKEN`, rendered by `setup.sh` into `/srv/garmin/nginx/cookie.inc` (root 0400). `setup.sh`
+  refuses an empty or malformed token; a missing `cookie.inc` makes `nginx -t` fail, so the site goes away (closed).
+  `set-secrets.sh --rotate` replaces the token too: every device logs in once more. The Shortcut and `push.py` keep
+  using the `Authorization` header.
 - No upload except `PUT` of exactly `/inbox/workout_2026.txt`, `/inbox/review.json`, `/inbox/sync` (≤ 2 MB, 6/min/IP);
   no GET/DELETE/listing on the inbox. The note text only reaches the parser, never a shell.
 - `X-Robots-Tag: noindex`, `Cache-Control: private, no-cache`, `X-Frame-Options: DENY`, `nosniff`.
@@ -103,7 +110,7 @@ trigger when the phone is in use, e.g. "App → Notes → Is Closed".
 The Shortcut contains the password (in the header): don't share it. After `set-secrets.sh --rotate`, replace the header.
 
 First rollout, also check: `deploy.sh` output has no tar xattr warnings; "Sync now" works from the phone's browser
-(credentials reused); the Home Screen icon doesn't ask for the password on every launch (else use a Safari bookmark).
+(credentials reused); the Home Screen icon asks for the password once, then not again (the `logbook_auth` cookie).
 
 First time: compare the upload with the Mac's export (`notes/workout_2026.txt`) — the server log shows the session
 and set counts after the import (`journalctl -u garmin-sync | grep notes`).

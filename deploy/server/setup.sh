@@ -9,12 +9,13 @@
 #   /opt/garmin             code + garmin.db + data/ + venvs (user garmin, 0750)
 #   /opt/garmin/state       env.sh (non-secret config), inbox-work/, temp snapshots
 #   /srv/garmin/site        published static site (read by nginx)
-#   /srv/garmin/nginx       logbook.conf + htpasswd (included by shopmate's nginx)
+#   /srv/garmin/nginx       logbook.conf + htpasswd + cookie.inc (included by shopmate's nginx)
 #   /srv/garmin/upload      inbox/ + tmp/ (written by nginx uid 101, read by group garmin)
 #
 # Parameters (SSM, region of the instance):
 #   /garmin/prod/DOMAIN, /garmin/prod/BUCKET              Terraform (shopmate repo, deploy/terraform/logbook.tf)
-#   /garmin/prod/GARMIN_API_KEY, /garmin/prod/HTPASSWD    SecureString, deploy/set-secrets.sh
+#   /garmin/prod/GARMIN_API_KEY, /garmin/prod/HTPASSWD,
+#   /garmin/prod/COOKIE_TOKEN                             SecureString, deploy/set-secrets.sh
 #   /shopmate/prod/CERTBOT_EMAIL                          shared with shopmate
 set -euo pipefail
 
@@ -43,6 +44,9 @@ BUCKET=$(param /garmin/prod/BUCKET)
 CERTBOT_EMAIL=$(param /shopmate/prod/CERTBOT_EMAIL)
 GARMIN_API_KEY=$(param /garmin/prod/GARMIN_API_KEY)
 HTPASSWD=$(param /garmin/prod/HTPASSWD)
+COOKIE_TOKEN=$(param /garmin/prod/COOKIE_TOKEN)
+# An empty or short token would let anyone in (empty cookie = "valid"): refuse anything but 64 hex chars.
+[[ "$COOKIE_TOKEN" =~ ^[0-9a-f]{64}$ ]] || { echo "/garmin/prod/COOKIE_TOKEN is not 64 hex chars - run deploy/set-secrets.sh"; exit 1; }
 
 echo "--- packages"
 PY=""
@@ -87,6 +91,15 @@ printf 'GARMIN_API_KEY=%s\n' "$GARMIN_API_KEY" > "$APP/.env"
 chown garmin:garmin "$APP/state/env.sh" "$APP/.env"
 printf '%s\n' "$HTPASSWD" > "$SRV/nginx/htpasswd"
 chown "$NGINX_UID":root "$SRV/nginx/htpasswd"; chmod 0400 "$SRV/nginx/htpasswd"
+# Read by the nginx master (root) at config load only. Anchored regex, not a plain string key: a 64-char string
+# overflows shopmate's map_hash_bucket_size (a global setting), and regexes compare case-sensitively.
+# Cookie lifetime one year; a rotated token logs every device out once.
+cat > "$SRV/nginx/cookie.inc" <<EOF
+# written by deploy/server/setup.sh from SSM /garmin/prod/COOKIE_TOKEN - do not edit
+map \$cookie_logbook_auth \$logbook_auth_realm  { "~^$COOKIE_TOKEN\$" off; default "Logbook"; }
+map \$cookie_logbook_auth \$logbook_auth_cookie { "~^$COOKIE_TOKEN\$" "";  default "logbook_auth=$COOKIE_TOKEN; Max-Age=31536000; Path=/; Secure; HttpOnly; SameSite=Lax"; }
+EOF
+chown root:root "$SRV/nginx/cookie.inc"; chmod 0400 "$SRV/nginx/cookie.inc"
 umask 022
 
 echo "--- venvs"
