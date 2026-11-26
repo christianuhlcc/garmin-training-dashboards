@@ -482,15 +482,19 @@ def build_strength(cfg: dict, enriched: pd.DataFrame, sets: pd.DataFrame, weight
     mw["workout_date"] = pd.to_datetime(mw["workout_date"])
     stypes = st.session_types(mr, emap) if len(mr) else pd.Series(dtype=object)
     sess_rows = []
-    linked = set(mw["garmin_activity_id"].dropna().astype("int64"))
+    # A note session can own several Garmin activities (watch stopped and restarted): all of them count as logged
+    # and their duration / HR / TRIMP are combined into the one session.
+    links = src.load_strength_links()
+    linked = set(links["activity_id"].dropna().astype("int64"))
+    gps = st.garmin_per_session(garmin_sess, links)
     for w in mw.itertuples():
-        g = garmin_sess[garmin_sess["activity_id"] == w.garmin_activity_id]
+        g = gps.loc[w.workout_id] if w.workout_id in gps.index else None
         ws = s[(s["session"] == w.workout_id) & s["working"]]
-        dur = float(g["duration_s"].iloc[0]) if len(g) else None
+        dur = g["duration_s"] if g is not None else None
         sess_rows.append({"session": w.workout_id, "date": w.workout_date, "type": stypes.get(w.workout_id, "other"),
                           "title": w.title, "logged": True, "duration_min": num(dur / 60, 0) if dur else None,
-                          "avg_hr": num(g["avg_hr"].iloc[0], 0) if len(g) else None,
-                          "trimp": num(g["trimp"].iloc[0], 0) if len(g) else None,
+                          "avg_hr": num(g["avg_hr"], 0) if g is not None else None,
+                          "trimp": num(g["trimp"], 0) if g is not None else None,
                           "sets": int(len(ws)), "tonnage": num(ws["set_load"].sum(), 0),
                           "sets_per_hour": num(len(ws) / (dur / 3600), 1) if dur else None})
     for g in garmin_sess[~garmin_sess["activity_id"].isin(linked)].itertuples():

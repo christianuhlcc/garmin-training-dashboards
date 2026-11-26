@@ -108,6 +108,29 @@ def session_types(mr: pd.DataFrame, emap: dict) -> pd.Series:
     return g.groupby(level=0).idxmax().map(lambda t: t[1])
 
 
+def garmin_per_session(acts: pd.DataFrame, links: pd.DataFrame) -> pd.DataFrame:
+    """Garmin physiology per note session, combined over all its linked activities (a watch stopped and
+    restarted gives one note entry several activities): duration and TRIMP summed, avg HR weighted by duration.
+    Index workout_id; columns duration_s, avg_hr, trimp (if acts has it), n_activities."""
+    cols = ["duration_s", "avg_hr", "trimp", "n_activities"]
+    if links.empty or acts.empty:
+        return pd.DataFrame(columns=cols, index=pd.Index([], name="workout_id"))
+    keep = [c for c in ("activity_id", "duration_s", "avg_hr", "trimp") if c in acts.columns]
+    m = links[["workout_id", "activity_id"]].astype("int64").merge(acts[keep].astype({"activity_id": "int64"}),
+                                                                  on="activity_id")
+    rows = {}
+    for wid, g in m.groupby("workout_id"):
+        dur = g["duration_s"].fillna(0)
+        hr_w = dur[g["avg_hr"].notna()].sum()
+        rows[wid] = {"duration_s": float(dur.sum()) or None,
+                     "avg_hr": float((g["avg_hr"] * dur).sum() / hr_w) if hr_w else None,
+                     "trimp": float(g["trimp"].sum(min_count=1)) if "trimp" in g and g["trimp"].notna().any() else None,
+                     "n_activities": int(len(g))}
+    out = pd.DataFrame.from_dict(rows, orient="index", columns=cols)
+    out.index.name = "workout_id"
+    return out
+
+
 def session_best(s: pd.DataFrame) -> pd.DataFrame:
     """Best e1RM and top set (heaviest, then most reps) per session and exercise."""
     w = s[s["working"]]

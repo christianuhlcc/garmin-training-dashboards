@@ -39,6 +39,11 @@ CREATE TABLE IF NOT EXISTS manual_sets (
     to_failure INTEGER, superset INTEGER, skipped INTEGER, parse_flag TEXT, note TEXT, line_raw TEXT,
     PRIMARY KEY (workout_id, exercise_no, set_no));
 CREATE INDEX IF NOT EXISTS idx_manual_sets_ex ON manual_sets (exercise, workout_date);
+-- Every Garmin strength activity that belongs to a note session: the 'primary' one (= garmin_activity_id) plus
+-- 'joined' ones (the watch was stopped and restarted, so one note entry = several Garmin activities that day).
+CREATE TABLE IF NOT EXISTS manual_workout_activities (
+    activity_id INTEGER PRIMARY KEY, workout_id INTEGER NOT NULL, role TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_manual_workout_activities_w ON manual_workout_activities (workout_id);
 """
 
 VIEWS = """
@@ -49,11 +54,16 @@ SELECT w.workout_id, w.workout_date, w.title, w.comments, w.n_exercises, w.n_set
        (SELECT ROUND(SUM(reps * load_kg)) FROM manual_sets s WHERE s.workout_id = w.workout_id) AS volume_kg,
        (SELECT GROUP_CONCAT(exercise, ', ') FROM (SELECT DISTINCT exercise FROM manual_sets s
             WHERE s.workout_id = w.workout_id AND skipped = 0 ORDER BY exercise_no)) AS exercises,
-       w.garmin_activity_id, w.garmin_match, a.start_time_local AS garmin_start_local,
-       ROUND(a.duration_s / 60.0, 1) AS garmin_duration_min, a.avg_hr AS garmin_avg_hr,
-       a.max_hr AS garmin_max_hr, a.calories AS garmin_calories,
-       a.total_sets AS garmin_sets, a.total_reps AS garmin_reps, a.body_battery_delta AS garmin_bb_delta
-FROM manual_workouts w LEFT JOIN activities a ON a.activity_id = w.garmin_activity_id;
+       w.garmin_activity_id, w.garmin_match, COUNT(a.activity_id) AS garmin_activities,
+       MIN(a.start_time_local) AS garmin_start_local,
+       ROUND(SUM(a.duration_s) / 60.0, 1) AS garmin_duration_min,
+       ROUND(SUM(a.avg_hr * a.duration_s) / SUM(CASE WHEN a.avg_hr IS NOT NULL THEN a.duration_s END)) AS garmin_avg_hr,
+       MAX(a.max_hr) AS garmin_max_hr, SUM(a.calories) AS garmin_calories,
+       SUM(a.total_sets) AS garmin_sets, SUM(a.total_reps) AS garmin_reps, SUM(a.body_battery_delta) AS garmin_bb_delta
+FROM manual_workouts w
+LEFT JOIN manual_workout_activities l ON l.workout_id = w.workout_id
+LEFT JOIN activities a ON a.activity_id = l.activity_id
+GROUP BY w.workout_id;
 
 DROP VIEW IF EXISTS v_exercise_progress;
 CREATE VIEW v_exercise_progress AS
@@ -395,6 +405,25 @@ def link_garmin(db: sqlite3.Connection):
                 claimed.add(free[0])
                 db.execute("UPDATE manual_workouts SET garmin_activity_id = ?, garmin_match = ? WHERE workout_id = ?",
                            (free[0], label, wid))
+    # The watch was stopped and restarted (two Garmin activities, one note entry): join the leftover strength
+    # activities of the linked activity's day to that note entry, so the session is not counted as unlogged.
+    # Only when exactly one note entry links to that day; with several entries the leftovers stay unassigned.
+    db.execute("CREATE TABLE IF NOT EXISTS manual_workout_activities ("
+               "activity_id INTEGER PRIMARY KEY, workout_id INTEGER NOT NULL, role TEXT NOT NULL)")
+    db.execute("DELETE FROM manual_workout_activities")
+    linked = db.execute("SELECT w.workout_id, w.garmin_activity_id, a.calendar_date FROM manual_workouts w "
+                        "JOIN activities a ON a.activity_id = w.garmin_activity_id").fetchall()
+    per_day: dict[str, list[int]] = {}
+    for wid, aid, d in linked:
+        per_day.setdefault(d, []).append(wid)
+        db.execute("INSERT INTO manual_workout_activities VALUES (?, ?, 'primary')", (aid, wid))
+    for wid, aid, d in linked:
+        if len(per_day[d]) != 1:
+            continue
+        for extra in by_day.get(d, []):
+            if extra not in claimed:
+                claimed.add(extra)
+                db.execute("INSERT INTO manual_workout_activities VALUES (?, ?, 'joined')", (extra, wid))
 
 
 def sync(db: sqlite3.Connection, log=print, query: str = NOTE_QUERY) -> None:

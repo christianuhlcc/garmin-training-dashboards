@@ -20,6 +20,7 @@ import pandas as pd
 
 from src.adapters import source as src
 from src.metrics import common
+from src.metrics import strength as st
 
 warnings.filterwarnings("ignore", message="The .generic. unit for NumPy timedelta is deprecated")
 BUILD = src.PROJECT / "build"
@@ -151,9 +152,11 @@ def build_brief(monday: date) -> dict:
     week_w = mw[(mw["workout_date"] >= m0) & (mw["workout_date"] <= s0)].sort_values("workout_date")
     stypes = {s["date"]: s["type"] for s in str_p["calendar"]}
     prog = {p["exercise"]: p for p in str_p["progression"]}
+    links = src.load_strength_links()  # a note session can own several Garmin activities (watch restarted)
+    gps = st.garmin_per_session(acts, links)
     sessions = []
     for w in week_w.itertuples():
-        g = acts[acts["activity_id"] == w.garmin_activity_id]
+        g = gps.loc[w.workout_id] if w.workout_id in gps.index else None
         ss = sets[(sets["session"] == w.workout_id)]
         exercises = []
         for ex, e in ss.groupby("exercise", sort=False):
@@ -166,10 +169,10 @@ def build_brief(monday: date) -> dict:
                 "status_overall": prog.get(ex, {}).get("status")})
         sessions.append({"date": w.workout_date.date().isoformat(), "type": stypes.get(w.workout_date.date().isoformat()),
                          "note_title": w.title, "note_comments": w.comments,
-                         "minutes": r(g["duration_s"].iloc[0] / 60, 0) if len(g) else None,
-                         "avg_hr": r(g["avg_hr"].iloc[0], 0) if len(g) else None, "exercises": exercises})
+                         "minutes": r(g["duration_s"] / 60, 0) if g is not None and g["duration_s"] else None,
+                         "avg_hr": r(g["avg_hr"], 0) if g is not None else None, "exercises": exercises})
     garmin_str = in_week(acts[acts["sub_sport"] == "strength_training"])
-    unlogged = garmin_str[~garmin_str["activity_id"].isin(mw["garmin_activity_id"].dropna()) & (garmin_str["duration_s"] >= 300)]
+    unlogged = garmin_str[~garmin_str["activity_id"].isin(links["activity_id"].dropna()) & (garmin_str["duration_s"] >= 300)]
     musc = mr[(mr["date"] >= m0) & (mr["date"] <= s0)].groupby("muscle")["w"].sum()
     labels = str_p["weekly_sets"]["labels"]
     split = cfg["strength"]["split"]

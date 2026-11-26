@@ -283,6 +283,23 @@ def load_intraday(kind: str, start: str | None = None, end: str | None = None) -
 
 # --------------------------------------------------------------------------- strength
 
+def _links_sql() -> str:
+    """SQL for (workout_id, activity_id, role): every Garmin activity belonging to a note session. Uses the
+    link table from notes_import (which joins a restarted watch recording to the day's note entry), or falls
+    back to the single garmin_activity_id on databases imported before that table existed."""
+    if _has_table("manual_workout_activities"):
+        return "SELECT workout_id, activity_id, role FROM manual_workout_activities"
+    return ("SELECT workout_id, garmin_activity_id AS activity_id, 'primary' AS role FROM manual_workouts "
+            "WHERE garmin_activity_id IS NOT NULL")
+
+
+def load_strength_links() -> pd.DataFrame:
+    """One row per (note session, Garmin activity); a note session can own several activities."""
+    if not _has_table("manual_workouts"):
+        return pd.DataFrame(columns=["workout_id", "activity_id", "role"])
+    return _query(_links_sql())
+
+
 def load_strength_sets() -> pd.DataFrame:
     """Manual log (Apple Notes, source='manual') wins; Garmin auto-detected FIT sets (source='garmin') are
     returned only for strength activities that have no manual session linked to them.
@@ -297,7 +314,7 @@ def load_strength_sets() -> pd.DataFrame:
             WHERE s.skipped = 0
             ORDER BY s.workout_id, s.exercise_no, s.set_no
         """))
-        manual_acts = "(SELECT garmin_activity_id FROM manual_workouts WHERE garmin_activity_id IS NOT NULL)"
+        manual_acts = f"(SELECT activity_id FROM ({_links_sql()}))"
     else:
         manual_acts = "(SELECT NULL)"
     frames.append(_query(f"""
