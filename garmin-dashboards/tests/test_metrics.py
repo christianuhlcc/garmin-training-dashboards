@@ -120,6 +120,24 @@ def test_progression_status():
     assert strength.progression_status([100, 100, 100, 90, 90, 90]) == "regressing"
 
 
+def test_trend_e1rm_covers_high_reps():
+    assert strength.trend_e1rm(7, 15) == pytest.approx(7 * 1.5)
+    assert strength.trend_e1rm(100, 10) == pytest.approx(strength.e1rm(100, 10))
+    assert math.isnan(strength.trend_e1rm(7, 21))
+    assert math.isnan(strength.trend_e1rm(0, 15))
+
+
+def test_high_rep_sessions_count_for_the_trend():
+    # DB Curl as logged (2025-06 .. 2026-11-26): the two newest sessions are 3x15 @ 7 kg. With the 1-12 rep e1RM
+    # they vanished and the block was compared with Aug 2025 -> "regressing". With the trend e1RM it progresses.
+    log = [(7, 10), (7, 16), (7, 12), (9, 15), (5, 15), (6, 15), (5, 12), (5, 12), (6, 12), (6, 12), (7, 15), (7, 15)]
+    assert strength.progression_status([strength.e1rm(w, r) for w, r in log]) == "regressing"
+    assert strength.progression_status([strength.trend_e1rm(w, r) for w, r in log]) == "progressing"
+    # A real drop at normal reps still regresses (Back Squat after the break: 70x8 -> 30-40x10).
+    squat = [(70, 8), (70, 8), (70, 8), (30, 10), (35, 10), (40, 10)]
+    assert strength.progression_status([strength.trend_e1rm(w, r) for w, r in squat]) == "regressing"
+
+
 # ---------------------------------------------------------------- 7.7 baselines and flags
 def test_rolling_baseline_excludes_current_window_and_needs_30_days():
     idx = pd.date_range("2026-01-01", periods=80, freq="D")

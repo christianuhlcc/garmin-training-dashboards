@@ -560,7 +560,7 @@ def build_strength(cfg: dict, enriched: pd.DataFrame, sets: pd.DataFrame, weight
         cur = g["e1rm"].iloc[-1]
         before = g[g["date"] <= t1 - pd.Timedelta(days=28)]
         ref = before["e1rm"].iloc[-1] if len(before) else np.nan
-        status = st.progression_status(g["e1rm"].tolist())
+        status = st.progression_status(g["trend_e1rm"].tolist())
         if len(g) >= 2 and (g["date"].iloc[-1] - g["date"].iloc[-2]).days > 42:
             status = "restart"  # first session after > 6 weeks off: a trend across the break means nothing
         if pd.isna(cur) and g["e1rm"].isna().all():

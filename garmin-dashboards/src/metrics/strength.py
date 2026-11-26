@@ -25,12 +25,26 @@ def e1rm(weight: float, reps: float) -> float:
     return weight * (1 + reps / 30)
 
 
+TREND_MAX_REPS = 20
+
+
+def trend_e1rm(weight: float, reps: float) -> float:
+    """Epley for the progression *trend* only, up to TREND_MAX_REPS reps. The displayed e1RM stays limited to
+    1-12 reps (too inaccurate as an absolute number above that), but for the direction of a trend a 15-rep
+    session must count: dropping it made a 3x15 @ 7 kg block look like a regression against older 12-rep sets."""
+    if weight is None or reps is None or (isinstance(weight, float) and math.isnan(weight)):
+        return float("nan")
+    if not (1 <= reps <= TREND_MAX_REPS) or weight <= 0:
+        return float("nan")
+    return weight * (1 + reps / 30)
+
+
 def prepare_sets(sets: pd.DataFrame, emap: dict, bodyweight: pd.Series, bw_fallback: float) -> pd.DataFrame:
     """Manual sets only, with effective weight (bodyweight + added for bodyweight lifts), e1RM and a
     working-set flag (7.10: exclude sets below 60% of the session's top weight for that exercise)."""
     s = sets[(sets["source"] == "manual") & (sets["set_type"] == "active")].copy()
     if s.empty:
-        return s.assign(eff_weight=[], e1rm=[], working=[], session=[])
+        return s.assign(eff_weight=[], e1rm=[], trend_e1rm=[], working=[], session=[])
     s["date"] = pd.to_datetime(s["date"])
     s["session"] = s["workout_id"].astype("int64")
     ex = emap["exercises"]
@@ -46,6 +60,7 @@ def prepare_sets(sets: pd.DataFrame, emap: dict, bodyweight: pd.Series, bw_fallb
     added = s["weight_kg"].fillna(0.0)
     s["eff_weight"] = np.where(s["bodyweight_lift"], s["bw"] + added, s["weight_kg"].astype(float))
     s["e1rm"] = [e1rm(w, r) for w, r in zip(s["eff_weight"], s["reps"])]
+    s["trend_e1rm"] = [trend_e1rm(w, r) for w, r in zip(s["eff_weight"], s["reps"])]
     top = s.groupby(["session", "exercise"])["eff_weight"].transform("max")
     s["working"] = s["eff_weight"].isna() | (s["eff_weight"] >= 0.6 * top)
     s["set_load"] = s["eff_weight"].fillna(0.0) * s["reps"].fillna(0)
@@ -100,16 +115,16 @@ def session_best(s: pd.DataFrame) -> pd.DataFrame:
     for (sess, ex), g in w.groupby(["session", "exercise"]):
         top = g.sort_values(["eff_weight", "reps"], ascending=False).iloc[0]
         rows.append({"session": sess, "date": g["date"].iloc[0], "exercise": ex,
-                     "e1rm": g["e1rm"].max(), "top_weight": top["weight_kg"], "top_eff_weight": top["eff_weight"],
+                     "e1rm": g["e1rm"].max(), "trend_e1rm": g["trend_e1rm"].max(), "top_weight": top["weight_kg"], "top_eff_weight": top["eff_weight"],
                      "top_reps": top["reps"], "implements": top["implements"], "sets": len(g),
                      "reps_total": g["reps"].sum(), "bodyweight_lift": bool(top["bodyweight_lift"])})
     return pd.DataFrame(rows).sort_values(["exercise", "date"]) if rows else pd.DataFrame(
-        columns=["session", "date", "exercise", "e1rm", "top_weight", "top_eff_weight", "top_reps", "implements",
+        columns=["session", "date", "exercise", "e1rm", "trend_e1rm", "top_weight", "top_eff_weight", "top_reps", "implements",
                  "sets", "reps_total", "bodyweight_lift"])
 
 
 def progression_status(e1rms: list[float], tol: float = 0.01) -> str:
-    """progressing / flat / regressing from the last sessions' e1RM (oldest first).
+    """progressing / flat / regressing from the last sessions' trend e1RM (oldest first, see trend_e1rm).
     Compares the best of the last 3 sessions with the best of the 3 before them; flat = no gain across 3 sessions."""
     vals = [v for v in e1rms if v is not None and not (isinstance(v, float) and math.isnan(v))]
     if len(vals) < 4:
