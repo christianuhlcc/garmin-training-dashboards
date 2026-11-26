@@ -919,7 +919,15 @@ def main():
     health_payload, health_summary, health_frame = build_health(cfg, daily, sleep, hrv, weight, vo2, enriched, today)
     weekly = build_weekly(today, cyc_extra["weekly"], str_summary.pop("_weekly"), health_frame)
     if health_summary.get("readiness"):  # same dict as in the health payload: the Overview card shows both
-        health_summary["readiness"]["plan"] = rd.plan(str_summary.get("next_session"), health_summary["readiness"]["verdict"])
+        R = health_summary["readiness"]
+        R["plan"] = rd.plan(str_summary.get("next_session"), R["verdict"])
+        # already trained today? Rides from Garmin + Strava archive; lifting from the note log, else Garmin's session
+        now = enriched[enriched["date"] == pd.Timestamp(today)]
+        rides = now[now["sport"] == "cycling"][["ride_type", "duration_s", "distance_m"]].to_dict("records")
+        lifts = list((str_summary.get("next_session") or {}).get("today_types") or [])
+        if not lifts and (now["sub_sport"] == "strength_training").any():
+            lifts = ["strength"]
+        R["done"] = rd.today_done(rides, lifts, R["verdict"])
 
     meta = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"), "data_through": data_through,
             "stale": (today - data_through).days > 3, "today": today, "first_day": first_day,

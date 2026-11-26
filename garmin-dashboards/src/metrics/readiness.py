@@ -190,3 +190,38 @@ def trend_note(day_status: dict, week: dict) -> str | None:
         return None
     what = " and ".join(f"7-day {names[k][0]} is still {names[k][1]}" for k in lagging)
     return f"Last night is close to your normal, but your {what}, which is why Body shows Watch. One good night doesn't end a trend: avoid max attempts."
+
+
+DONE_TEXT = {  # replaces the verdict's "train today?" advice once something is logged for today
+    "go": "Training's in for today: refuel, hydrate and sleep well. Anything more today should stay easy.",
+    "easy": "You've already trained today: keep the rest of the day light and get to bed early.",
+    "rest": "You trained despite strain signals: take it easy for the rest of the day and prioritise sleep.",
+    "unknown": "Training's in for today: recover well and sleep well tonight.",
+}
+RIDE_NAMES = {"commute": "commute ride", "long": "long ride", "indoor": "indoor ride", "ebike": "e-bike ride"}
+
+
+def _dur(s: float) -> str:
+    m = int(round(s / 60))
+    return f"{m} min" if m < 60 else f"{m // 60} h {m % 60:02d} min"
+
+
+def today_done(rides: list[dict], lifts: list[str], verdict_key: str) -> dict | None:
+    """What was already done today and the advice that replaces the morning verdict text.
+    rides: [{ride_type, duration_s, distance_m}] for today's cycling; lifts: names of today's strength sessions
+    (manual log split types, or "strength" for a Garmin-only session)."""
+    parts = []
+    if rides:
+        kinds = {r.get("ride_type") for r in rides}
+        kind = RIDE_NAMES.get(kinds.pop(), "ride") if len(kinds) == 1 else "ride"
+        noun = kind if len(rides) == 1 else kind + "s"
+        secs = sum(r.get("duration_s") or 0 for r in rides)
+        km = sum(r.get("distance_m") or 0 for r in rides) / 1000
+        stats = ", ".join(x for x in (_dur(secs) if secs else "", f"{km:.0f} km" if km >= 0.5 else "") if x)
+        parts.append(("" if len(rides) == 1 else f"{len(rides)} ") + noun + (f" ({stats})" if stats else ""))
+    if lifts:
+        parts.append(" + ".join(lifts) + " workout")
+    if not parts:
+        return None
+    summary = " and ".join(parts)
+    return {"summary": summary[0].upper() + summary[1:] + " logged today.", "text": DONE_TEXT.get(verdict_key, DONE_TEXT["unknown"])}

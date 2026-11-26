@@ -13,8 +13,9 @@
     const ST = { ok: ["in_range", "OK"], caution: ["watch", "Caution"], poor: ["out_of_range", "Poor"] };
     const sec = D.el("section", { class: "readiness " + (TONE[RD.verdict] || "ok"), "aria-labelledby": "rd-h" });
     const when = RD.is_today ? "Today" : `Based on the night to ${D.esc(D.dateLabel(RD.date))}`;
-    sec.innerHTML = `<div class="rd-head"><h2 id="rd-h"><span class="rd-when">${when}</span> <span class="rd-verdict">${D.esc(RD.label)}</span></h2>` +
-      `<p class="rd-text">${D.esc(RD.text)}</p></div>`;
+    const DN = RD.done;  // something is already logged today: say so instead of "good to train"
+    sec.innerHTML = `<div class="rd-head"><h2 id="rd-h"><span class="rd-when">${when}</span> <span class="rd-verdict">${DN ? "Done" : D.esc(RD.label)}</span></h2>` +
+      (DN ? `<p class="rd-text"><b>${D.esc(DN.summary)}</b> ${D.esc(DN.text)}</p>` : `<p class="rd-text">${D.esc(RD.text)}</p>`) + `</div>`;
     if (RD.trend_note) sec.appendChild(D.el("p", { class: "rd-trend" }, D.esc(RD.trend_note)));
     const PL = RD.plan;
     if (PL) {

@@ -123,3 +123,21 @@ def test_trend_note_only_when_week_flagged_but_night_fine():
     assert rd.trend_note({"hrv": "ok", "rhr": "ok"}, {"hrv": "in_range", "rhr": "in_range"}) is None
     assert "7-day HRV is still low" in rd.trend_note({"hrv": "caution", "rhr": "ok"}, {"hrv": "watch", "rhr": "in_range"})
     assert rd.trend_note({"hrv": "poor"}, {"hrv": "out_of_range"}) is None  # last night is bad too: no "but" needed
+
+
+def test_today_done_nothing_logged():
+    assert rd.today_done([], [], "go") is None
+
+
+def test_today_done_rides_and_lift():
+    rides = [{"ride_type": "commute", "duration_s": 2520, "distance_m": 13100},
+             {"ride_type": "commute", "duration_s": 3000, "distance_m": 13300}]
+    out = rd.today_done(rides, [], "go")
+    assert out["summary"] == "2 commute rides (1 h 32 min, 26 km) logged today." and "Training's in" in out["text"]
+    one = rd.today_done(rides[:1], ["push"], "easy")
+    assert one["summary"] == "Commute ride (42 min, 13 km) and push workout logged today."
+    assert "already trained" in one["text"]
+    assert "despite strain" in rd.today_done([], ["strength"], "rest")["text"]
+    mixed = rd.today_done([{"ride_type": "commute", "duration_s": 600, "distance_m": 3000},
+                           {"ride_type": "long", "duration_s": 7200, "distance_m": 60000}], [], "go")
+    assert mixed["summary"].startswith("2 rides ")
