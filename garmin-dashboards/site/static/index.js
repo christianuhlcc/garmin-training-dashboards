@@ -30,8 +30,12 @@
     const ul = D.el("ul", { class: "rd-factors" });
     for (const f of RD.factors) {
       const [cls, lab] = ST[f.status] || ["ok", "No data"];
-      ul.appendChild(D.el("li", { class: "rd-factor" }, `<span class="chip ${cls}">${lab}</span><span class="rd-name">${D.esc(f.label)}</span>` +
-        `<span class="rd-val">${D.esc(f.value || "–")}</span><span class="rd-detail">${D.esc(f.detail || "")}</span>`));
+      // each row links to the Health panel that explains it (f.href, from build_metrics.READINESS_LINKS)
+      const cells = `<span class="chip ${cls}">${lab}</span><span class="rd-name">${D.esc(f.label)}</span>` +
+        `<span class="rd-val">${D.esc(f.value || "–")}</span><span class="rd-detail">${D.esc(f.detail || "")}</span>`;
+      ul.appendChild(D.el("li", { class: "rd-factor" }, f.href
+        ? `<a class="rd-row" href="${D.esc(f.href)}">${cells}<span class="rd-go" aria-hidden="true">→</span></a>`
+        : `<div class="rd-row">${cells}</div>`));
     }
     sec.appendChild(ul);
     if (RD.need_why) sec.appendChild(D.el("p", { class: "small rd-note" }, `Last night's sleep need (Garmin): ${D.esc(RD.need_why)}. ` +

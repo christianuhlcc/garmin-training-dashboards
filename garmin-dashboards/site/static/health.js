@@ -167,6 +167,58 @@
       '<span class="key" style="background:var(--s4)"></span> Sleep under 90 % of need &nbsp; — Sleep need &nbsp; ┄ Usual need'), p.body.firstChild);
   }
 
+  // ---------------------------------------------------------------- 3c training load (the readiness "Training load" factor)
+  if (H.training_load) {
+    const T = H.training_load, L = T.latest, [cau, poor] = T.bounds;
+    const word = L.ratio === null ? "" : L.ratio >= poor ? " (poor)" : L.ratio >= cau ? " (caution)" : " (OK)";
+    const top = T.activities.filter((a) => a.acute).sort((a, b) => (b.trimp || 0) - (a.trimp || 0)).slice(0, 3)
+      .map((a) => `${D.esc(D.dateLabel(a.date))} ${D.esc(a.kind.toLowerCase())} ${D.fmt(a.trimp, 0)}`);
+    const p = D.panel(grid, { id: "training-load", title: "Training load: last 7 vs 28 days", full: true,
+      caption: L.ratio === null ? `Not enough history yet for a ratio (needs a ${T.chronic_days}-day average of at least ${T.min_chronic}).`
+        : `Last ${T.acute_days} days: <b>${D.fmt(L.acute, 0)}</b> a day, <b>${D.fmt(L.ratio, 1)}×</b> your ${T.chronic_days}-day average of ${D.fmt(L.chronic, 0)}${word}. ` +
+          `That is ${D.fmt(L.acute_sum, 0)} in ${T.acute_days} days against ${D.fmt(L.before_sum, 0)} in the ${T.chronic_days - T.acute_days} days before.` +
+          (top.length ? ` Biggest: ${top.join(", ")}.` : ""),
+      method: `Load = TRIMP per activity (Banister): minutes × heart-rate reserve × 0.64·e<sup>1.92 × HRR</sup>, from the HR stream when there is one, ` +
+        `otherwise from average HR. Roughly: an easy hour ≈ 20, a hard hour ≈ 100. Every activity with heart rate counts, including e-bike rides and walks. ` +
+        `Ratio = mean daily load of the last ${T.acute_days} days ÷ mean of the last ${T.chronic_days} days (both include today; rest days count as 0). ` +
+        `Today's readiness on the Overview rates it caution from ${cau}× and poor from ${poor}×. It measures how sudden an increase is, not how hard ` +
+        `the training is: after a few easy weeks even normal training reads high, and it settles once the ${T.chronic_days}-day average catches up.`,
+      table: () => ({ cols: [{ key: "date", label: "Date" }, { key: "name", label: "Activity" }, { key: "kind", label: "Kind" },
+        { key: "min", label: "Min", num: true }, { key: "avg_hr", label: "Avg HR", num: true }, { key: "trimp", label: "TRIMP", num: true },
+        { key: "w", label: `In last ${T.acute_days} days` }],
+        rows: T.activities.map((a) => ({ ...a, name: a.name || "–", w: a.acute ? "yes" : "" })) }) });
+    const KC = (c) => ({ "Cycling": c.s[0], "E-bike": c.s[2], "Strength": c.s[1], "Other": c.muted });
+    const axis = (ctx) => D.timeAxis(ctx, { min: T.days[0], max: T.days[T.days.length - 1] });
+    D.chart(p.body, (ctx) => {
+      const c = ctx.c, col = KC(c);
+      return D.base(ctx, {
+        _aria: `Daily training load by kind over the last ${T.days.length} days, with ${T.acute_days}- and ${T.chronic_days}-day averages`, legend: { show: false },
+        tooltip: Object.assign(D.base(ctx).tooltip, { formatter: D.tooltipFormatter((v) => D.fmt(v, 0)) }),
+        xAxis: axis(ctx), yAxis: D.valueAxis(ctx, "TRIMP per day", { min: 0, scale: false }),
+        series: [...T.kinds.map((k) => D.bar(k, T.days.map((d, i) => [d, T.by_kind[k][i] || null]), col[k],
+            { stack: "load", barMaxWidth: 10, itemStyle: { color: col[k], borderRadius: 0 } })),
+          D.line(`${T.acute_days}-day average`, T.acute, c.ink, { z: 5 }),
+          D.line(`${T.chronic_days}-day average`, T.chronic, c.muted, { z: 4, lineStyle: { type: "dashed", width: 2, color: c.muted } })],
+      });
+    }, "tall");
+    D.chart(p.body, (ctx) => {
+      const c = ctx.c;
+      return D.base(ctx, {
+        _aria: `Ratio of the ${T.acute_days}-day to the ${T.chronic_days}-day training load`, legend: { show: false },
+        grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
+        tooltip: Object.assign(D.base(ctx).tooltip, { formatter: D.tooltipFormatter((v) => D.fmt(v, 2) + "×") }),
+        xAxis: axis(ctx), yAxis: D.valueAxis(ctx, `${T.acute_days}- / ${T.chronic_days}-day ratio`, { min: 0, scale: false }),
+        series: [D.line("Ratio", T.ratio, c.s[3], { areaStyle: { opacity: 0.12 },
+          markLine: { silent: true, symbol: "none", label: { position: "insideStartTop", color: c.muted, fontSize: 11 },
+            lineStyle: { color: c.axis, type: "dashed" },
+            data: [{ yAxis: cau, label: { formatter: `caution ${cau}×`, position: "insideStartBottom" } }, { yAxis: poor, label: { formatter: `poor ${poor}×` } }] } })],
+      });
+    }, "short");
+    p.body.insertBefore(D.el("p", { class: "legend-note" }, T.kinds.map((k, i) =>
+      `<span class="key" style="background:${["var(--s1)", "var(--s3)", "var(--s2)", "var(--muted)"][i]}"></span> ${k}`).join(" &nbsp; ") +
+      ` &nbsp; — ${T.acute_days}-day average &nbsp; ┄ ${T.chronic_days}-day average`), p.body.firstChild);
+  }
+
   // ---------------------------------------------------------------- 4 sleep regularity
   {
     const R = H.regularity;
@@ -383,7 +435,7 @@
     D.onRefresh(draw);
   }
   D.arrange(root, [
-    { id: "g-recovery", title: "Recovery", intro: "Each night against your own 60-day range.", ids: ["hrv", "rhr", "sleep", "sleep-need", "regularity"] },
+    { id: "g-recovery", title: "Recovery", intro: "Each night against your own 60-day range.", ids: ["hrv", "rhr", "sleep", "sleep-need", "training-load", "regularity"] },
     { id: "g-connections", title: "Connections", intro: "What moves your recovery: training load, daily stress, strain and the day of the week.", ids: ["lvr", "stress", "strain", "weekday"] },
     { id: "g-longterm", title: "Long-term", ids: ["activity", "vo2", "weight", "resp"] },
   ]);

@@ -724,6 +724,23 @@ def body_battery_at_wake(sleep: pd.DataFrame) -> pd.Series:
     return pd.Series(out, dtype=float)
 
 
+READINESS_LINKS = {"hrv": "health.html#hrv", "rhr": "health.html#rhr", "sleep": "health.html#sleep-need",
+                   "debt": "health.html#sleep-need", "load": "health.html#training-load", "strain": "health.html#strain"}
+LOAD_KINDS = ["Cycling", "E-bike", "Strength", "Other"]
+LOAD_PANEL_DAYS = 90
+
+
+def load_kind(a) -> str:
+    """Which bar an activity's TRIMP is stacked into on the training-load panel."""
+    if getattr(a, "ride_type", None) == "ebike" or str(getattr(a, "sub_sport", "")).startswith("e_bike"):
+        return "E-bike"
+    if a.sport == "cycling":
+        return "Cycling"
+    if a.sub_sport == "strength_training":
+        return "Strength"
+    return "Other"
+
+
 def build_health(cfg: dict, daily: pd.DataFrame, sleep: pd.DataFrame, hrv: pd.DataFrame, weight: pd.DataFrame,
                  vo2: pd.DataFrame, enriched: pd.DataFrame, today: date) -> tuple[dict, dict, pd.DataFrame]:
     hcfg = cfg["health"]
@@ -888,11 +905,42 @@ def build_health(cfg: dict, daily: pd.DataFrame, sleep: pd.DataFrame, hrv: pd.Da
                                                 val("need_h"), val("need_base_h"))
         sleep_need_panel["latest"] = {"date": x.date(), "sleep_h": num(row["sleep_h"], 2), "need_h": num(row["need_h"], 2),
                                       "base_h": num(row["need_base_h"], 2), "debt_h": num(row["debt_h"], 2), "why": readiness["need_why"]}
+        # every factor row on the Overview links to the Health panel that explains it
+        for fa in readiness["factors"]:
+            fa["href"] = READINESS_LINKS.get(fa["key"])
+
+    # 14 training load behind the readiness factor: daily TRIMP by kind, 7- and 28-day means, ratio, activities
+    load_panel = None
+    if len(nights):
+        end = nights[-1]
+        days = pd.date_range(end - pd.Timedelta(days=LOAD_PANEL_DAYS - 1), end, freq="D")
+        e = enriched[(enriched["date"] >= days[0]) & (enriched["date"] <= end)].copy()
+        e["kind"] = [load_kind(r) for r in e.itertuples()]
+        by_kind = {k: [num(v, 0) for v in e[e["kind"] == k].groupby("date")["trimp"].sum().reindex(days, fill_value=0.0)]
+                   for k in LOAD_KINDS}
+        acute = load.rolling(rd.ACUTE_DAYS, min_periods=rd.ACUTE_DAYS).mean()
+        chronic = load.rolling(rd.CHRONIC_DAYS, min_periods=rd.CHRONIC_DAYS).mean()
+        win = e[e["date"] > end - pd.Timedelta(days=rd.CHRONIC_DAYS)].sort_values(["date", "start_ts_local"], ascending=False)
+        load_panel = {
+            "days": [d.date() for d in days], "kinds": LOAD_KINDS, "by_kind": by_kind,
+            "acute": pts(acute.reindex(days), 1), "chronic": pts(chronic.reindex(days), 1),
+            "ratio": pts(f["load_ratio"].reindex(days), 2),
+            "bounds": list(rd.LOAD_RATIO), "acute_days": rd.ACUTE_DAYS, "chronic_days": rd.CHRONIC_DAYS,
+            "min_chronic": rd.MIN_CHRONIC_LOAD,
+            "latest": {"date": end.date(), "acute": num(acute.get(end), 1), "chronic": num(chronic.get(end), 1),
+                       "ratio": num(f["load_ratio"].get(end), 2),
+                       "acute_sum": num(load[end - pd.Timedelta(days=rd.ACUTE_DAYS - 1):end].sum(), 0),
+                       "before_sum": num(load[end - pd.Timedelta(days=rd.CHRONIC_DAYS - 1):end - pd.Timedelta(days=rd.ACUTE_DAYS)].sum(), 0)},
+            "activities": [{"date": r.date.date(), "name": r.name if isinstance(r.name, str) else None, "kind": r.kind,
+                            "min": num((r.duration_s or 0) / 60, 0), "avg_hr": num(r.avg_hr, 0), "trimp": num(r.trimp, 0),
+                            "acute": bool(r.date > end - pd.Timedelta(days=rd.ACUTE_DAYS))} for r in win.itertuples()],
+        }
 
     payload = {"header": header, "sentence": sentence, "hrv": hrv_panel, "rhr": rhr_panel, "sleep": sleep_panel,
                "regularity": regularity, "stress": stress_panel, "resp": resp_panel, "activity": activity_panel,
                "vo2max": v_panel, "weight": weight_panel, "load_recovery": lvr, "weekday": weekday_panel,
-               "strain": strain_panel, "sleep_need": sleep_need_panel, "readiness": readiness, "baseline_days": bdays, "short_days": sdays,
+               "strain": strain_panel, "sleep_need": sleep_need_panel, "readiness": readiness, "training_load": load_panel,
+               "baseline_days": bdays, "short_days": sdays,
                "intraday_from": "2026-07-01"}
     summary = {"header": header, "short_days": sdays, "n_metrics": n_metrics, "n_outside": len(outside),
                "hrv_avg7": header[0].get("avg7"), "rhr_avg7": header[1].get("avg7"),
