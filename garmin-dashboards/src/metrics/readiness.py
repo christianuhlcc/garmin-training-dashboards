@@ -51,10 +51,13 @@ def _isnan(v) -> bool:
     return v is None or (isinstance(v, float) and math.isnan(v))
 
 
-def sleep_debt(sleep_h: pd.Series, need_h: pd.Series, nights: int = DEBT_NIGHTS) -> pd.Series:
-    """Rolling sum of (need - sleep) over the last `nights` nights, floored at 0. A long night pays back a short one
-    within the window; nights without a sleep record are skipped (not counted as zero sleep)."""
-    gap = (need_h - sleep_h)
+def sleep_debt(sleep_h: pd.Series, need_h: pd.Series, nights: int = DEBT_NIGHTS, nap_h: pd.Series | None = None) -> pd.Series:
+    """Rolling sum of (need - sleep - naps) over the last `nights` days, floored at 0. A long night pays back a short
+    one within the window, and so do naps (30-60 min naps partly offset sleep loss in athletes); nights without a sleep
+    record are skipped (not counted as zero sleep)."""
+    gap = need_h - sleep_h
+    if nap_h is not None:
+        gap = gap - nap_h.reindex(gap.index).fillna(0)
     s = gap.rolling(nights, min_periods=max(3, nights // 2)).sum()
     return s.clip(lower=0)
 
@@ -126,7 +129,7 @@ def assess(day: dict) -> dict:
         None if _isnan(day.get("sleep_h")) else _hm(day["sleep_h"]),
         None if share is None else f"{share * 100:.0f} % of your {_hm(day['need_h'])} need")
     add("debt", "Sleep debt", rate(day.get("debt_h"), DEBT_H, low_is_bad=False),
-        None if _isnan(day.get("debt_h")) else ("none" if day["debt_h"] < 1 / 60 else _hm(day["debt_h"])), f"over the last {DEBT_NIGHTS} nights")
+        None if _isnan(day.get("debt_h")) else ("none" if day["debt_h"] < 1 / 60 else _hm(day["debt_h"])), f"over the last {DEBT_NIGHTS} nights, naps counted")
     add("load", "Training load", rate(day.get("load_ratio"), LOAD_RATIO, low_is_bad=False),
         None if _isnan(day.get("load_ratio")) else f"{day['load_ratio']:.1f}×",
         "last 7 days vs the 28-day average")

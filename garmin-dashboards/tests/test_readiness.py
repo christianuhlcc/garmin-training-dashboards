@@ -70,6 +70,8 @@ def test_sleep_debt_pays_back_and_floors_at_zero():
     assert rd.sleep_debt(sleep2, need).iloc[-1] == 0.0
     sleep3 = pd.Series([10] * 7, index=idx, dtype=float)
     assert rd.sleep_debt(sleep3, need).iloc[-1] == 0.0                     # surplus never becomes negative debt
+    naps = pd.Series([0.5, None, 1.0, 0, 0, 0.5, 0], index=idx, dtype=float)
+    assert rd.sleep_debt(sleep, need, nap_h=naps).iloc[-1] == 12.0        # naps pay back, missing = no nap
 
 
 def test_load_ratio_needs_history_and_detects_spike():

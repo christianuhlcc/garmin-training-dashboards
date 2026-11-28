@@ -130,14 +130,14 @@
       caption: L ? `Last night ${D.hours(L.sleep_h)}. ${L.why ? D.esc(L.why) : "Need " + D.hours(L.need_h)}. ${N.debt_nights}-night sleep debt <b>${L.debt_h >= 1 / 60 ? D.hours(L.debt_h) : "none"}</b>.`
         : "Sleep per night against Garmin's sleep need.",
       method: `Sleep need is Garmin's nightly estimate (usual need, adjusted for HRV, training load, recent sleep and naps). ` +
-        `Sleep debt = the sum of (need − sleep) over the last ${N.debt_nights} nights, floored at zero, so a long night pays back a short one. ` +
+        `Sleep debt = the sum of (need − sleep − naps) over the last ${N.debt_nights} days, floored at zero, so a long night or a nap pays back a short night. ` +
         `Debt above ${N.debt_bounds[0]} h counts as caution and above ${N.debt_bounds[1]} h as poor in today's readiness on the Overview.`,
       table: () => {
-        const need = new Map(N.need.map((x) => [x[0], x[1]])), debt = new Map(N.debt.map((x) => [x[0], x[1]]));
-        return { cols: [{ key: "d", label: "Night" }, { key: "s", label: "Sleep", num: true, fmt: D.hours }, { key: "n", label: "Need", num: true, fmt: D.hours },
+        const need = new Map(N.need.map((x) => [x[0], x[1]])), debt = new Map(N.debt.map((x) => [x[0], x[1]])), nap = new Map((N.nap || []).map((x) => [x[0], x[1]]));
+        return { cols: [{ key: "d", label: "Night" }, { key: "s", label: "Sleep", num: true, fmt: D.hours }, { key: "z", label: "Nap", num: true, fmt: (v) => (v ? D.hours(v) : "–") }, { key: "n", label: "Need", num: true, fmt: D.hours },
           { key: "g", label: "Gap", num: true, fmt: (v) => (v === null || v === undefined ? "–" : (v > 0 ? "−" : "+") + D.hours(Math.abs(v))) },
           { key: "debt", label: "7-night debt", num: true, fmt: D.hours }],
-          rows: D.filterPts(N.sleep).reverse().map(([d, v]) => ({ d, s: v, n: need.get(d), g: need.get(d) == null || v == null ? null : need.get(d) - v, debt: debt.get(d) })) };
+          rows: D.filterPts(N.sleep).reverse().map(([d, v]) => ({ d, s: v, z: nap.get(d), n: need.get(d), g: need.get(d) == null || v == null ? null : need.get(d) - v - (nap.get(d) || 0), debt: debt.get(d) })) };
       } });
     D.chart(p.body, (ctx) => {
       const c = ctx.c, need = new Map(N.need.map((x) => [x[0], x[1]]));

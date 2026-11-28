@@ -33,7 +33,7 @@ DAILY_COLS = ["date", "resting_hr", "steps", "intensity_min_moderate", "intensit
               "body_battery_max", "body_battery_min", "respiration_avg_sleep", "spo2_avg_sleep", "vo2max",
               "calories_active", "floors"]
 SLEEP_COLS = ["date", "bed_ts", "wake_ts", "total_s", "deep_s", "light_s", "rem_s", "awake_s", "sleep_score",
-              "need_min", "need_baseline_min", "need_hrv_adj", "need_training_adj", "need_history_adj", "need_nap_adj"]
+              "need_min", "need_baseline_min", "need_hrv_adj", "need_training_adj", "need_history_adj", "need_nap_adj", "nap_s"]
 HRV_COLS = ["date", "hrv_overnight_avg_ms", "hrv_status", "garmin_baseline_low", "garmin_baseline_high"]
 WEIGHT_COLS = ["date", "weight_kg", "body_fat_pct"]
 STRENGTH_COLS = ["activity_id", "date", "set_index", "exercise_raw", "exercise", "reps", "weight_kg",
@@ -231,7 +231,8 @@ def load_vo2max() -> pd.DataFrame:
 
 
 def load_sleep() -> pd.DataFrame:
-    """Sleep belongs to the calendar date of wake-up. Timestamps are local wall-clock."""
+    """Sleep belongs to the calendar date of wake-up. Timestamps are local wall-clock. nap_s = daytime naps on that
+    calendar date (after that morning's wake-up), 0 when there were none."""
     df = _query("""
         SELECT calendar_date AS date, sleep_start_local AS bed_ts, sleep_end_local AS wake_ts,
                sleep_s AS total_s, deep_s, light_s, rem_s, awake_s, score AS sleep_score,
@@ -239,7 +240,8 @@ def load_sleep() -> pd.DataFrame:
                json_extract(raw, '$.sleepNeed.hrvAdjustment') AS need_hrv_adj,
                json_extract(raw, '$.sleepNeed.trainingFeedback') AS need_training_adj,
                json_extract(raw, '$.sleepNeed.sleepHistoryAdjustment') AS need_history_adj,
-               json_extract(raw, '$.sleepNeed.napAdjustment') AS need_nap_adj
+               json_extract(raw, '$.sleepNeed.napAdjustment') AS need_nap_adj,
+               COALESCE(nap_s, 0) AS nap_s
         FROM sleep WHERE sleep_s IS NOT NULL ORDER BY calendar_date
     """)
     df = _to_dt(df, "bed_ts", "wake_ts")

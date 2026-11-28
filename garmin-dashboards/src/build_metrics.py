@@ -778,7 +778,8 @@ def build_health(cfg: dict, daily: pd.DataFrame, sleep: pd.DataFrame, hrv: pd.Da
     f["need_base_h"] = sl["need_baseline_min"] / 60
     for c in ("need_hrv_adj", "need_training_adj", "need_history_adj", "need_nap_adj"):
         f[c] = sl[c]
-    f["debt_h"] = rd.sleep_debt(f["sleep_h"], f["need_h"])
+    f["nap_h"] = sl["nap_s"] / 3600
+    f["debt_h"] = rd.sleep_debt(f["sleep_h"], f["need_h"], nap_h=f["nap_h"])
     f["bed_min"] = [hl.clock_minutes(sl["bed_ts"].get(x)) if x in sl.index else np.nan for x in idx]
     f["wake_min"] = [hl.clock_minutes(sl["wake_ts"].get(x)) if x in sl.index else np.nan for x in idx]
     f["mid_min"] = [hl.sleep_midpoint_minutes(sl["bed_ts"].get(x), sl["total_s"].get(x)) if x in sl.index else np.nan for x in idx]
@@ -886,7 +887,7 @@ def build_health(cfg: dict, daily: pd.DataFrame, sleep: pd.DataFrame, hrv: pd.Da
     f["load"] = load
     f["load_ratio"] = rd.load_ratio(load)
     f["strain"] = strain.reindex(idx, fill_value=False)
-    sleep_need_panel = {"sleep": pts(f["sleep_h"], 2), "need": pts(f["need_h"], 2), "need_base": pts(f["need_base_h"], 2),
+    sleep_need_panel = {"sleep": pts(f["sleep_h"], 2), "need": pts(f["need_h"], 2), "need_base": pts(f["need_base_h"], 2), "nap": pts(f["nap_h"].where(f["nap_h"] > 0), 2),
                         "debt": pts(f["debt_h"], 2), "debt_nights": rd.DEBT_NIGHTS, "debt_bounds": list(rd.DEBT_H)}
     readiness = None
     nights = f.index[f["sleep_h"].notna() | f["hrv"].notna()]
