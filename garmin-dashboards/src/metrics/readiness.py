@@ -11,11 +11,12 @@ The verdict counts *domains*, not factors, so signals that move together are not
   load  = 7- vs 28-day training load, capped at caution: a load spike is a cause, HRV / resting HR show whether the
           body absorbed it. Acute:chronic ratios are a contested injury-risk heuristic (Impellizzeri et al. 2020),
           not a daily readiness measure, so load alone never makes a day easy.
-Easy = one domain poor, or two domains need caution. A single caution (one short night, HRV a bit low) is normal
-day-to-day noise and stays "go": HRV-guided training studies only back off when HRV is clearly below the individual
-normal (Kiviniemi 2007, Vesterinen 2016, Javaloyes 2019), and one short night costs strength only a little
-(Craven et al. 2022). Rest needs a strong signal: the strain pattern, or HRV and resting HR both poor, or body and
-sleep both poor.
+Easy = one domain poor, or two domains need caution. A single caution (one short night, HRV a bit low) stays "go".
+This is deliberately more permissive than strict HRV-guided protocols (Kiviniemi 2007: one morning below mean - 1 SD;
+Vesterinen 2016 / Javaloyes 2019: 7-day lnRMSSD outside a 0.5 SD band), because those protocols swap a hard session
+for an easy one rather than skip training, meta-analyses find only small, non-significant gains over a fixed plan
+(Manresa-Rocamora 2021), single-night HRV is noisy, and one short night costs strength only a little (Craven 2022).
+Rest needs a strong signal: the strain pattern, HRV and resting HR both poor, or body and sleep both poor.
 """
 
 from __future__ import annotations
