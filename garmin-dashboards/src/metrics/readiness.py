@@ -4,6 +4,18 @@ Report are not available through the Personal API). Plus sleep need vs actual sl
 Every factor is rated ok / caution / poor against fixed, documented thresholds, and the verdict is derived from the
 ratings, so the Overview can always show *why*. Sleep, HRV and resting HR are dated by the wake-up morning, so today's
 row describes last night.
+
+The verdict counts *domains*, not factors, so signals that move together are not counted twice:
+  body  = HRV + resting HR (both autonomic: they usually shift together after hard days, illness or alcohol)
+  sleep = last night + sleep debt (the debt includes last night)
+  load  = 7- vs 28-day training load, capped at caution: a load spike is a cause, HRV / resting HR show whether the
+          body absorbed it. Acute:chronic ratios are a contested injury-risk heuristic (Impellizzeri et al. 2020),
+          not a daily readiness measure, so load alone never makes a day easy.
+Easy = one domain poor, or two domains need caution. A single caution (one short night, HRV a bit low) is normal
+day-to-day noise and stays "go": HRV-guided training studies only back off when HRV is clearly below the individual
+normal (Kiviniemi 2007, Vesterinen 2016, Javaloyes 2019), and one short night costs strength only a little
+(Craven et al. 2022). Rest needs a strong signal: the strain pattern, or HRV and resting HR both poor, or body and
+sleep both poor.
 """
 
 from __future__ import annotations
@@ -25,11 +37,13 @@ LOAD_RATIO = (1.3, 1.5)         # 7-day / 28-day mean daily load, high is bad
 
 VERDICTS = {
     "go": ("Go", "Good to train today."),
-    "easy": ("Easy", "Some signals are off: keep today light (easy ride, technique, or a short session)."),
+    "easy": ("Easy", "Several signals agree you're not fully recovered: keep today light (easy ride, technique, or a short session)."),
     "rest": ("Rest", "Your body is under strain: rest or move gently today."),
     "unknown": ("No data", "Not enough data from last night to judge today."),
 }
-CORE = ("hrv", "rhr", "strain")  # a poor rating here alone means rest
+DOMAINS = {"body": ("hrv", "rhr"), "sleep": ("sleep", "debt"), "load": ("load",)}
+CAPPED = {"load": "caution"}  # a domain that can push towards easy, never on its own
+_RANK = {"ok": 0, "caution": 1, "poor": 2}
 
 
 def _isnan(v) -> bool:
@@ -61,15 +75,29 @@ def rate(value, bounds: tuple[float, float], low_is_bad: bool) -> str | None:
     return "poor" if value > poor else "caution" if value > caution else "ok"
 
 
+def domain_ratings(ratings: dict[str, str | None]) -> dict[str, str | None]:
+    """Worst rating per domain (None when no factor of the domain has data), with CAPPED domains limited."""
+    out = {}
+    for dom, keys in DOMAINS.items():
+        known = [ratings[k] for k in keys if ratings.get(k) is not None]
+        r = max(known, key=_RANK.get) if known else None
+        if r is not None and dom in CAPPED and _RANK[r] > _RANK[CAPPED[dom]]:
+            r = CAPPED[dom]
+        out[dom] = r
+    return out
+
+
 def verdict(ratings: dict[str, str | None]) -> str:
-    known = {k: v for k, v in ratings.items() if v is not None}
-    if not any(k in known for k in ("hrv", "rhr", "sleep")):
+    if not any(ratings.get(k) is not None for k in ("hrv", "rhr", "sleep")):
         return "unknown"
-    poor = [k for k, v in known.items() if v == "poor"]
-    caution = [k for k, v in known.items() if v == "caution"]
-    if any(k in CORE for k in poor) or len(poor) >= 2:
+    if ratings.get("strain") == "poor" or (ratings.get("hrv") == "poor" and ratings.get("rhr") == "poor"):
         return "rest"
-    if poor or len(caution) >= 2:
+    dom = domain_ratings(ratings)
+    poor = sum(r == "poor" for r in dom.values())
+    caution = sum(r == "caution" for r in dom.values())
+    if poor >= 2:
+        return "rest"
+    if poor or caution >= 2:
         return "easy"
     return "go"
 
@@ -107,7 +135,12 @@ def assess(day: dict) -> dict:
     v = verdict({x["key"]: x["status"] for x in f})
     label, text = VERDICTS[v]
     off = [x["label"] for x in f if x["status"] in ("caution", "poor")]
-    reason = ("Off: " + ", ".join(off) + ".") if off else ("All signals in range." if v == "go" else "")
+    if not off:
+        reason = "All signals in range." if v == "go" else ""
+    elif v == "go":  # one domain slightly off is day-to-day noise: worth a glance, not a reason to hold back
+        reason = "Worth watching: " + ", ".join(off) + " (alone not a reason to hold back)."
+    else:
+        reason = "Off: " + ", ".join(off) + "."
     return {"verdict": v, "label": label, "text": text, "reason": reason, "factors": f}
 
 

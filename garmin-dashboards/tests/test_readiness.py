@@ -18,18 +18,36 @@ def test_all_in_range_is_go():
     assert out["verdict"] == "go" and out["reason"] == "All signals in range."
 
 
-def test_two_cautions_is_easy_one_caution_is_go():
-    assert rd.assess(GOOD | {"sleep_h": 7.0})["verdict"] == "go"                     # 87.5 % of need: caution
-    out = rd.assess(GOOD | {"sleep_h": 7.0, "debt_h": 4.0})
-    assert out["verdict"] == "easy" and "Last night" in out["reason"] and "Sleep debt" in out["reason"]
+def test_one_caution_is_go_with_a_watch_note():
+    out = rd.assess(GOOD | {"sleep_h": 7.0})                                         # 87.5 % of need: caution
+    assert out["verdict"] == "go" and out["reason"].startswith("Worth watching: Last night")
 
 
-def test_poor_core_signal_is_rest_poor_other_is_easy():
-    assert rd.assess(GOOD | {"hrv_z": -2.3})["verdict"] == "rest"
-    assert rd.assess(GOOD | {"rhr_z": 2.4})["verdict"] == "rest"
+def test_related_signals_count_once():
+    assert rd.assess(GOOD | {"sleep_h": 7.0, "debt_h": 4.0})["verdict"] == "go"      # sleep domain only
+    assert rd.assess(GOOD | {"hrv_z": -1.3, "rhr_z": 1.4})["verdict"] == "go"        # body domain only
+
+
+def test_cautions_in_two_domains_is_easy():
+    out = rd.assess(GOOD | {"hrv_z": -1.3, "sleep_h": 7.0})
+    assert out["verdict"] == "easy" and out["reason"] == "Off: HRV, Last night."
+    assert rd.assess(GOOD | {"rhr_z": 1.4, "load_ratio": 1.4})["verdict"] == "easy"
+
+
+def test_load_alone_never_makes_a_day_easy():
+    assert rd.assess(GOOD | {"load_ratio": 1.7})["verdict"] == "go"
+    assert status(rd.assess(GOOD | {"load_ratio": 1.7}), "load") == "poor"           # still shown as poor
+    assert rd.assess(GOOD | {"load_ratio": 1.7, "sleep_h": 7.0})["verdict"] == "easy"
+    assert rd.assess(GOOD | {"load_ratio": 1.7, "debt_h": 7})["verdict"] == "easy"   # capped: not two poor domains
+
+
+def test_one_poor_domain_is_easy_strong_signals_are_rest():
+    assert rd.assess(GOOD | {"hrv_z": -2.3})["verdict"] == "easy"
+    assert rd.assess(GOOD | {"rhr_z": 2.4})["verdict"] == "easy"
+    assert rd.assess(GOOD | {"sleep_h": 5.5})["verdict"] == "easy"
     assert rd.assess(GOOD | {"strain": True})["verdict"] == "rest"
-    assert rd.assess(GOOD | {"load_ratio": 1.7})["verdict"] == "easy"
-    assert rd.assess(GOOD | {"load_ratio": 1.7, "debt_h": 7})["verdict"] == "rest"  # two poor factors
+    assert rd.assess(GOOD | {"hrv_z": -2.3, "rhr_z": 2.4})["verdict"] == "rest"
+    assert rd.assess(GOOD | {"hrv_z": -2.3, "sleep_h": 5.5})["verdict"] == "rest"   # body and sleep both poor
 
 
 def test_garmin_low_hrv_status_lifts_ok_to_caution():

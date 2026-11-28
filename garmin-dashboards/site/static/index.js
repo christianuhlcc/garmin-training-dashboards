@@ -41,7 +41,8 @@
     if (RD.need_why) sec.appendChild(D.el("p", { class: "small rd-note" }, `Last night's sleep need (Garmin): ${D.esc(RD.need_why)}. ` +
       `<a href="health.html#sleep-need">Sleep vs need →</a>`));
     sec.appendChild(D.el("p", { class: "small rd-note" }, "Rules, not a black box: HRV and resting HR vs your 60-day normal (1 / 2 SD), last night vs sleep need (90 / 75 %), " +
-      "7-night sleep debt (3 / 6 h), 7- vs 28-day training load (1.3 / 1.5×). Rest if HRV, resting HR or the strain pattern is poor, or two factors are; easy if one is poor or two need caution. " +
+      "7-night sleep debt (3 / 6 h), 7- vs 28-day training load (1.3 / 1.5×). Grouped into body (HRV + resting HR), sleep (last night + debt) and load, so related signals count once. " +
+      "Easy if one group is poor or two need caution; load alone never is. Rest on the strain pattern, HRV and resting HR both poor, or body and sleep both poor. " +
       "Next up = the split type after your last push / pull / shoulders session; a muscle counts as recovered 2+ days after its last primary work."));
     root.appendChild(sec);
   }

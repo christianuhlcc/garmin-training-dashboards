@@ -181,7 +181,8 @@
       method: `Load = TRIMP per activity (Banister): minutes × heart-rate reserve × 0.64·e<sup>1.92 × HRR</sup>, from the HR stream when there is one, ` +
         `otherwise from average HR. Roughly: an easy hour ≈ 20, a hard hour ≈ 100. Every activity with heart rate counts, including e-bike rides and walks. ` +
         `Ratio = mean daily load of the last ${T.acute_days} days ÷ mean of the last ${T.chronic_days} days (both include today; rest days count as 0). ` +
-        `Today's readiness on the Overview rates it caution from ${cau}× and poor from ${poor}×. It measures how sudden an increase is, not how hard ` +
+        `Today's readiness on the Overview rates it caution from ${cau}× and poor from ${poor}×, but load alone never makes a day easy: ` +
+        `it only counts together with a body or sleep signal, because HRV and resting HR show whether the load was absorbed. It measures how sudden an increase is, not how hard ` +
         `the training is: after a few easy weeks even normal training reads high, and it settles once the ${T.chronic_days}-day average catches up.`,
       table: () => ({ cols: [{ key: "date", label: "Date" }, { key: "name", label: "Activity" }, { key: "kind", label: "Kind" },
         { key: "min", label: "Min", num: true }, { key: "avg_hr", label: "Avg HR", num: true }, { key: "trimp", label: "TRIMP", num: true },
